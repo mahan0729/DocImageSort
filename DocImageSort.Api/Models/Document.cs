@@ -27,4 +27,5 @@ public class Document : BaseEntity
     public DocumentStatus Status { get; set; } = DocumentStatus.Pending;
     public string AiClassificationNotes { get; set; } = string.Empty;
     public DateTime? DocumentDate { get; set; }
+    public string FileHash { get; set; } = string.Empty;
 }

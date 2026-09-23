@@ -18,6 +18,7 @@ builder.Services.AddScoped<IConversionService, ConversionService>();
 builder.Services.AddScoped<IRenameService, RenameService>();
 builder.Services.AddScoped<IRoutingService, RoutingService>();
 builder.Services.AddScoped<IDocumentReviewService, DocumentReviewService>();
+builder.Services.AddScoped<IDuplicateDetectionService, DuplicateDetectionService>();
 
 builder.Services.AddCors(options =>
 {
@@ -38,6 +39,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    // Safe column additions for databases created before these columns existed.
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Documents\" ADD COLUMN \"FileHash\" TEXT NOT NULL DEFAULT ''"); }
+    catch { /* column already exists */ }
 }
 
 app.UseCors("AllowReact");

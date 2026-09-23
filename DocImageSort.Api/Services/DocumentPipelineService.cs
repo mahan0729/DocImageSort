@@ -18,6 +18,7 @@ public class DocumentPipelineService : IDocumentPipelineService
     private readonly IConversionService _converter;
     private readonly IRenameService _renamer;
     private readonly IRoutingService _router;
+    private readonly IDuplicateDetectionService _duplicateDetector;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
@@ -26,6 +27,7 @@ public class DocumentPipelineService : IDocumentPipelineService
         IConversionService converter,
         IRenameService renamer,
         IRoutingService router,
+        IDuplicateDetectionService duplicateDetector,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
@@ -33,6 +35,7 @@ public class DocumentPipelineService : IDocumentPipelineService
         _converter = converter;
         _renamer = renamer;
         _router = router;
+        _duplicateDetector = duplicateDetector;
         _logger = logger;
     }
 
@@ -72,6 +75,29 @@ public class DocumentPipelineService : IDocumentPipelineService
                 $"File received and queued for classification.", AppLogLevel.Info, cancellationToken);
 
             _logger.LogInformation("Document {Id} ingested: {File}", document.Id, fileName);
+
+            // Step 1b — Duplicate detection
+            var fileHash = await _duplicateDetector.ComputeHashAsync(filePath, cancellationToken);
+            document.FileHash = fileHash;
+
+            if (await _duplicateDetector.IsDuplicateAsync(fileHash, document.Id, cancellationToken))
+            {
+                document.Status = DocumentStatus.Duplicate;
+                document.UpdatedBy = "system";
+                document.UpdatedDate = DateTime.UtcNow;
+                await db.SaveChangesAsync(cancellationToken);
+
+                await LogAsync(db, document.Id, fileName, "DuplicateCheck", "Duplicate",
+                    $"File hash {fileHash[..8]}… matches an existing document. Skipping pipeline.",
+                    AppLogLevel.Warning, cancellationToken);
+
+                _logger.LogWarning("Document {Id} is a duplicate — skipping pipeline.", document.Id);
+                return;
+            }
+
+            document.UpdatedBy = "system";
+            document.UpdatedDate = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
 
             // Step 2 — AI classification
             var classification = await _classifier.ClassifyAsync(filePath, cancellationToken);
