@@ -15,6 +15,7 @@ builder.Services.AddHostedService<DropFolderWatcherService>();
 builder.Services.AddScoped<IDocumentPipelineService, DocumentPipelineService>();
 builder.Services.AddScoped<IClassificationService, ClassificationService>();
 builder.Services.AddScoped<IConversionService, ConversionService>();
+builder.Services.AddScoped<IRenameService, RenameService>();
 
 builder.Services.AddCors(options =>
 {

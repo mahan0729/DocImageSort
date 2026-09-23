@@ -16,17 +16,20 @@ public class DocumentPipelineService : IDocumentPipelineService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IClassificationService _classifier;
     private readonly IConversionService _converter;
+    private readonly IRenameService _renamer;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
         IServiceScopeFactory scopeFactory,
         IClassificationService classifier,
         IConversionService converter,
+        IRenameService renamer,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
         _classifier = classifier;
         _converter = converter;
+        _renamer = renamer;
         _logger = logger;
     }
 
@@ -100,7 +103,17 @@ public class DocumentPipelineService : IDocumentPipelineService
                     $"Converted to PDF: {Path.GetFileName(pdfPath)}", AppLogLevel.Info, cancellationToken);
             }
 
-            // TODO: Step 4 — Auto-rename (item 8)
+            // Step 4 — Auto-rename (PENDING prefix until borrower assigned in review UI)
+            var renamedPath = await _renamer.RenameFileAsync(document, borrower: null, cancellationToken);
+            document.RenamedFileName = Path.GetFileName(renamedPath);
+            document.SourcePath = renamedPath;
+            document.UpdatedBy = "system";
+            document.UpdatedDate = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+
+            await LogAsync(db, document.Id, fileName, "Rename", "Success",
+                $"Renamed to: {document.RenamedFileName}", AppLogLevel.Info, cancellationToken);
+
             // TODO: Step 5 — Auto-route (item 9)
         }
         catch (Exception ex)
