@@ -17,6 +17,7 @@ public class DocumentPipelineService : IDocumentPipelineService
     private readonly IClassificationService _classifier;
     private readonly IConversionService _converter;
     private readonly IRenameService _renamer;
+    private readonly IRoutingService _router;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
@@ -24,12 +25,14 @@ public class DocumentPipelineService : IDocumentPipelineService
         IClassificationService classifier,
         IConversionService converter,
         IRenameService renamer,
+        IRoutingService router,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
         _classifier = classifier;
         _converter = converter;
         _renamer = renamer;
+        _router = router;
         _logger = logger;
     }
 
@@ -114,7 +117,19 @@ public class DocumentPipelineService : IDocumentPipelineService
             await LogAsync(db, document.Id, fileName, "Rename", "Success",
                 $"Renamed to: {document.RenamedFileName}", AppLogLevel.Info, cancellationToken);
 
-            // TODO: Step 5 — Auto-route (item 9)
+            // Step 5 — Auto-route to PENDING folder (final route after borrower assigned in review UI)
+            var filedPath = await _router.RouteAsync(document, borrower: null, cancellationToken);
+            document.FiledPath = filedPath;
+            document.SourcePath = filedPath;
+            document.Status = DocumentStatus.Filed;
+            document.UpdatedBy = "system";
+            document.UpdatedDate = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+
+            await LogAsync(db, document.Id, fileName, "Route", "Success",
+                $"Filed to: {filedPath}", AppLogLevel.Info, cancellationToken);
+
+            _logger.LogInformation("Document {Id} pipeline complete. Filed: {Path}", document.Id, filedPath);
         }
         catch (Exception ex)
         {

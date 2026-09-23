@@ -16,6 +16,7 @@ builder.Services.AddScoped<IDocumentPipelineService, DocumentPipelineService>();
 builder.Services.AddScoped<IClassificationService, ClassificationService>();
 builder.Services.AddScoped<IConversionService, ConversionService>();
 builder.Services.AddScoped<IRenameService, RenameService>();
+builder.Services.AddScoped<IRoutingService, RoutingService>();
 
 builder.Services.AddCors(options =>
 {
