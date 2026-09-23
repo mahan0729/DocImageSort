@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHostedService<DropFolderWatcherService>();
 builder.Services.AddScoped<IDocumentPipelineService, DocumentPipelineService>();
 builder.Services.AddScoped<IClassificationService, ClassificationService>();
+builder.Services.AddScoped<IConversionService, ConversionService>();
 
 builder.Services.AddCors(options =>
 {

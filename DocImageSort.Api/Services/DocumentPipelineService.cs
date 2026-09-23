@@ -15,15 +15,18 @@ public class DocumentPipelineService : IDocumentPipelineService
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IClassificationService _classifier;
+    private readonly IConversionService _converter;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
         IServiceScopeFactory scopeFactory,
         IClassificationService classifier,
+        IConversionService converter,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
         _classifier = classifier;
+        _converter = converter;
         _logger = logger;
     }
 
@@ -82,7 +85,21 @@ public class DocumentPipelineService : IDocumentPipelineService
 
             _logger.LogInformation("Document {Id} classified as: {Type}", document.Id, classification.DocumentType);
 
-            // TODO: Step 3 — PDF conversion (item 7)
+            // Step 3 — PDF conversion (images only)
+            var pdfPath = await _converter.ConvertToPdfAsync(filePath, cancellationToken);
+            if (pdfPath != filePath)
+            {
+                document.FileExtension = ".pdf";
+                document.SourcePath = pdfPath;
+                document.Status = DocumentStatus.Converted;
+                document.UpdatedBy = "system";
+                document.UpdatedDate = DateTime.UtcNow;
+                await db.SaveChangesAsync(cancellationToken);
+
+                await LogAsync(db, document.Id, fileName, "Convert", "Success",
+                    $"Converted to PDF: {Path.GetFileName(pdfPath)}", AppLogLevel.Info, cancellationToken);
+            }
+
             // TODO: Step 4 — Auto-rename (item 8)
             // TODO: Step 5 — Auto-route (item 9)
         }
