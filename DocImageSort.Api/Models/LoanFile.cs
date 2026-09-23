@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace DocImageSort.Api.Models;
 
 /// <summary>
@@ -8,18 +10,22 @@ namespace DocImageSort.Api.Models;
 public class LoanFile : BaseEntity
 {
     /// <summary>Foreign key to the primary borrower.</summary>
+    [Column(Order = 1)]
     public int BorrowerId { get; set; }
 
     /// <summary>Navigation property to the primary borrower.</summary>
     public Borrower Borrower { get; set; } = null!;
 
     /// <summary>Loan number copied from the borrower at the time the loan file was created.</summary>
+    [Column(Order = 2)]
     public string LoanNumber { get; set; } = string.Empty;
 
     /// <summary>Relative subfolder path under the FilesFolder (e.g. <c>Smith,John</c>).</summary>
+    [Column(Order = 3)]
     public string FolderPath { get; set; } = string.Empty;
 
     /// <summary>True while the loan is open and accepting new documents.</summary>
+    [Column(Order = 4)]
     public bool IsActive { get; set; } = true;
 
     /// <summary>Documents filed under this loan file.</summary>
