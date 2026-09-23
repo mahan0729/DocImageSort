@@ -2,6 +2,7 @@ using DocImageSort.Api.Data;
 using DocImageSort.Api.Models;
 using DocImageSort.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DocImageSort.Tests.Services;
 
@@ -16,7 +17,7 @@ public class DuplicateDetectionServiceTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new DuplicateDetectionService(_db);
+        _sut = new DuplicateDetectionService(_db, NullLogger<DuplicateDetectionService>.Instance);
     }
 
     public void Dispose() => _db.Dispose();

@@ -95,6 +95,9 @@ public class DocumentPipelineService : IDocumentPipelineService
                 return;
             }
 
+            await LogAsync(db, document.Id, fileName, "DuplicateCheck", "Unique",
+                "No duplicate found — proceeding with pipeline.", AppLogLevel.Info, cancellationToken);
+
             document.UpdatedBy = "system";
             document.UpdatedDate = DateTime.UtcNow;
             await db.SaveChangesAsync(cancellationToken);
