@@ -26,6 +26,11 @@ public class DropFolderWatcherService : BackgroundService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Starts the <see cref="FileSystemWatcher"/> on the configured drop folder.
+    /// Creates the folder if it does not exist. Returns immediately; file events are handled asynchronously.
+    /// </summary>
+    /// <param name="stoppingToken">Triggered when the host is shutting down.</param>
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var dropPath = _config["DropFolder:Path"] ?? "C:\\DocImageSort\\Drop";
@@ -52,6 +57,12 @@ public class DropFolderWatcherService : BackgroundService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Invoked when a new file appears in the drop folder.
+    /// Waits 500 ms for the write to complete, then delegates to <see cref="IDocumentPipelineService"/>.
+    /// </summary>
+    /// <param name="filePath">Absolute path of the newly created file.</param>
+    /// <param name="cancellationToken">Cancellation token from the host.</param>
     private async Task OnFileCreatedAsync(string filePath, CancellationToken cancellationToken)
     {
         var ext = Path.GetExtension(filePath);
