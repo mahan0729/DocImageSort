@@ -13,10 +13,12 @@ namespace DocImageSort.Api.Controllers;
 public class ProcessingLogsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<ProcessingLogsController> _logger;
 
-    public ProcessingLogsController(AppDbContext db)
+    public ProcessingLogsController(AppDbContext db, ILogger<ProcessingLogsController> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <summary>
@@ -30,38 +32,46 @@ public class ProcessingLogsController : ControllerBase
         [FromQuery] int limit = 500,
         CancellationToken ct = default)
     {
-        var query = _db.ProcessingLogs.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(level) &&
-            Enum.TryParse<Models.LogLevel>(level, ignoreCase: true, out var parsed))
+        try
         {
-            query = query.Where(l => l.Level == parsed);
-        }
+            var query = _db.ProcessingLogs.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
+            if (!string.IsNullOrWhiteSpace(level) &&
+                Enum.TryParse<Models.LogLevel>(level, ignoreCase: true, out var parsed))
+            {
+                query = query.Where(l => l.Level == parsed);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(l =>
+                    l.FileName.ToLower().Contains(term) ||
+                    l.Action.ToLower().Contains(term) ||
+                    l.Message.ToLower().Contains(term));
+            }
+
+            var logs = await query
+                .OrderByDescending(l => l.CreatedDate)
+                .Take(limit)
+                .Select(l => new ProcessingLogDto(
+                    l.Id,
+                    l.DocumentId,
+                    l.FileName,
+                    l.Action,
+                    l.Outcome,
+                    l.Message,
+                    l.Level.ToString(),
+                    l.CreatedDate))
+                .ToListAsync(ct);
+
+            return Ok(logs);
+        }
+        catch (Exception ex)
         {
-            var term = search.Trim().ToLower();
-            query = query.Where(l =>
-                l.FileName.ToLower().Contains(term) ||
-                l.Action.ToLower().Contains(term) ||
-                l.Message.ToLower().Contains(term));
+            _logger.LogError(ex, "GetAll processing logs failed");
+            return StatusCode(500, ex.Message);
         }
-
-        var logs = await query
-            .OrderByDescending(l => l.CreatedDate)
-            .Take(limit)
-            .Select(l => new ProcessingLogDto(
-                l.Id,
-                l.DocumentId,
-                l.FileName,
-                l.Action,
-                l.Outcome,
-                l.Message,
-                l.Level.ToString(),
-                l.CreatedDate))
-            .ToListAsync(ct);
-
-        return Ok(logs);
     }
 }
 

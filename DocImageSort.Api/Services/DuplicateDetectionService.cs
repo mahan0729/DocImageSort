@@ -11,18 +11,28 @@ namespace DocImageSort.Api.Services;
 public class DuplicateDetectionService : IDuplicateDetectionService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<DuplicateDetectionService> _logger;
 
-    public DuplicateDetectionService(AppDbContext db)
+    public DuplicateDetectionService(AppDbContext db, ILogger<DuplicateDetectionService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
     public async Task<string> ComputeHashAsync(string filePath, CancellationToken ct = default)
     {
-        await using var stream = File.OpenRead(filePath);
-        var bytes = await SHA256.HashDataAsync(stream, ct);
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        try
+        {
+            await using var stream = File.OpenRead(filePath);
+            var bytes = await SHA256.HashDataAsync(stream, ct);
+            return Convert.ToHexString(bytes).ToLowerInvariant();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to compute hash for: {File}", filePath);
+            throw;
+        }
     }
 
     /// <inheritdoc/>
@@ -30,8 +40,16 @@ public class DuplicateDetectionService : IDuplicateDetectionService
     {
         if (string.IsNullOrEmpty(fileHash)) return false;
 
-        return await _db.Documents
-            .Where(d => d.Id != excludeDocumentId && d.FileHash == fileHash)
-            .AnyAsync(ct);
+        try
+        {
+            return await _db.Documents
+                .Where(d => d.Id != excludeDocumentId && d.FileHash == fileHash)
+                .AnyAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Duplicate check failed for hash {Hash}", fileHash[..Math.Min(8, fileHash.Length)]);
+            throw;
+        }
     }
 }
