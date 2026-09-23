@@ -15,8 +15,8 @@ public enum DocumentStatus
 /// </summary>
 public class Document : BaseEntity
 {
-    public int LoanFileId { get; set; }
-    public LoanFile LoanFile { get; set; } = null!;
+    public int? LoanFileId { get; set; }
+    public LoanFile? LoanFile { get; set; }
 
     public string OriginalFileName { get; set; } = string.Empty;
     public string RenamedFileName { get; set; } = string.Empty;

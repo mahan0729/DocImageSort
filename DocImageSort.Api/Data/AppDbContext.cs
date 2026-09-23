@@ -22,7 +22,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<LoanFile>()
             .HasMany(l => l.Documents)
             .WithOne(d => d.LoanFile)
-            .HasForeignKey(d => d.LoanFileId);
+            .HasForeignKey(d => d.LoanFileId)
+            .IsRequired(false);
 
         modelBuilder.Entity<ProcessingLog>()
             .HasOne(p => p.Document)

@@ -12,6 +12,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHostedService<DropFolderWatcherService>();
+builder.Services.AddScoped<IDocumentPipelineService, DocumentPipelineService>();
 
 builder.Services.AddCors(options =>
 {
