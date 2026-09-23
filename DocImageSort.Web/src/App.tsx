@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BorrowersPage } from './pages/BorrowersPage'
+import { DocumentsPage } from './pages/DocumentsPage'
 import './App.css'
 
 type Page = 'dashboard' | 'borrowers' | 'documents' | 'log' | 'settings'
@@ -82,7 +83,7 @@ function App() {
   function renderPage() {
     switch (page) {
       case 'borrowers': return <BorrowersPage />
-      case 'documents': return <ComingSoon title="Documents" />
+      case 'documents': return <DocumentsPage />
       case 'log':       return <ComingSoon title="Processing Log" />
       case 'settings':  return <ComingSoon title="Settings" />
       default:          return <Dashboard onNavigate={setPage} />
