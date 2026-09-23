@@ -3,15 +3,17 @@ import { BorrowersPage } from './pages/BorrowersPage'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProcessingLogPage } from './pages/ProcessingLogPage'
+import { HelpPage } from './pages/HelpPage'
 import './App.css'
 
-type Page = 'dashboard' | 'borrowers' | 'documents' | 'log' | 'settings'
+type Page = 'dashboard' | 'borrowers' | 'documents' | 'log' | 'settings' | 'help'
 
 const NAV_LINKS: { label: string; page: Page }[] = [
   { label: 'Borrowers',      page: 'borrowers' },
   { label: 'Documents',      page: 'documents' },
   { label: 'Processing Log', page: 'log' },
   { label: 'Settings',       page: 'settings' },
+  { label: 'Help',           page: 'help' },
 ]
 
 const FEATURES: { icon: string; title: string; description: string; action: string; page: Page }[] = [
@@ -88,6 +90,7 @@ function App() {
       case 'documents': return <DocumentsPage />
       case 'log':       return <ProcessingLogPage />
       case 'settings':  return <SettingsPage />
+      case 'help':      return <HelpPage />
       default:          return <Dashboard onNavigate={setPage} />
     }
   }
