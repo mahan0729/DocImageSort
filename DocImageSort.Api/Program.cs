@@ -35,13 +35,50 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// Ensure required directories exist before the file watcher starts.
+var dropPath  = app.Configuration["DropFolder:Path"]  ?? @"C:\DocImageSort\Drop";
+var filesPath = app.Configuration["FilesFolder:Path"] ?? @"C:\DocImageSort\Files";
+if (!Directory.Exists(dropPath))  Directory.CreateDirectory(dropPath);
+if (!Directory.Exists(filesPath)) Directory.CreateDirectory(filesPath);
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
     // Safe column additions for databases created before these columns existed.
     try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Documents\" ADD COLUMN \"FileHash\" TEXT NOT NULL DEFAULT ''"); }
     catch { /* column already exists */ }
+
+    // Seed users (Phase 1: no passwords — auth added in Phase 2).
+    if (!db.Users.Any())
+    {
+        db.Users.AddRange(
+            new DocImageSort.Api.Models.User
+            {
+                FirstName = "Matt",
+                LastName  = "Mahan",
+                Email     = "mahanster@gmail.com",
+                Username  = "mmahan",
+                Role      = "Admin",
+                IsActive  = true,
+                CreatedBy = "system",
+                UpdatedBy = "system"
+            },
+            new DocImageSort.Api.Models.User
+            {
+                FirstName = "Chance",
+                LastName  = "Nelson",
+                Email     = "chance.nelson@midwestbankers.com",
+                Username  = "cnelson",
+                Role      = "Admin",
+                IsActive  = true,
+                CreatedBy = "system",
+                UpdatedBy = "system"
+            }
+        );
+        db.SaveChanges();
+    }
 }
 
 app.UseCors("AllowReact");
