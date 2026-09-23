@@ -1,73 +1,113 @@
+import { useState } from 'react'
+import { BorrowersPage } from './pages/BorrowersPage'
 import './App.css'
 
-const NAV_LINKS = [
-  { label: 'Borrowers',      href: '#borrowers' },
-  { label: 'Documents',      href: '#documents' },
-  { label: 'Processing Log', href: '#log' },
-  { label: 'Settings',       href: '#settings' },
+type Page = 'dashboard' | 'borrowers' | 'documents' | 'log' | 'settings'
+
+const NAV_LINKS: { label: string; page: Page }[] = [
+  { label: 'Borrowers',      page: 'borrowers' },
+  { label: 'Documents',      page: 'documents' },
+  { label: 'Processing Log', page: 'log' },
+  { label: 'Settings',       page: 'settings' },
 ]
 
-const FEATURES = [
+const FEATURES: { icon: string; title: string; description: string; action: string; page: Page }[] = [
   {
     icon: '📁',
     title: 'Borrowers',
     description: 'Create and manage borrower profiles. Each borrower gets their own folder for filed documents.',
     action: 'Manage Borrowers',
-    href: '#borrowers',
+    page: 'borrowers',
   },
   {
     icon: '📄',
     title: 'Documents',
     description: 'Review AI-classified documents, confirm document types, and assign them to borrowers.',
     action: 'Review Documents',
-    href: '#documents',
+    page: 'documents',
   },
   {
     icon: '📋',
     title: 'Processing Log',
     description: 'View the full audit trail of every file ingested, classified, converted, renamed, and routed.',
     action: 'View Log',
-    href: '#log',
+    page: 'log',
   },
   {
     icon: '⚙️',
     title: 'Settings',
     description: 'Configure your drop folder, files folder, and Azure storage feature flag.',
     action: 'Open Settings',
-    href: '#settings',
+    page: 'settings',
   },
 ]
 
+function ComingSoon({ title }: { title: string }) {
+  return (
+    <div>
+      <h1>{title}</h1>
+      <p style={{ color: 'var(--text-muted)' }}>This section is coming soon.</p>
+    </div>
+  )
+}
+
+function Dashboard({ onNavigate }: { onNavigate: (page: Page) => void }) {
+  return (
+    <>
+      <h1>Dashboard</h1>
+      <p style={{ color: 'var(--text-muted)' }}>
+        Drop a document into your watch folder to start the pipeline — AI classifies, converts, and routes it automatically.
+      </p>
+      <div className="dashboard-grid">
+        {FEATURES.map(f => (
+          <div key={f.page} className="card feature-card">
+            <div className="card-icon">{f.icon}</div>
+            <h3>{f.title}</h3>
+            <p>{f.description}</p>
+            <div className="card-footer">
+              <button className="btn btn-outline" onClick={() => onNavigate(f.page)}>
+                {f.action}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function App() {
+  const [page, setPage] = useState<Page>('dashboard')
+
+  function renderPage() {
+    switch (page) {
+      case 'borrowers': return <BorrowersPage />
+      case 'documents': return <ComingSoon title="Documents" />
+      case 'log':       return <ComingSoon title="Processing Log" />
+      case 'settings':  return <ComingSoon title="Settings" />
+      default:          return <Dashboard onNavigate={setPage} />
+    }
+  }
+
   return (
     <>
       <header className="app-header">
-        <span className="brand">DocImageSort</span>
+        <button className="brand-btn" onClick={() => setPage('dashboard')}>DocImageSort</button>
         <nav>
           {NAV_LINKS.map(link => (
-            <a key={link.href} href={link.href}>{link.label}</a>
+            <button
+              key={link.page}
+              className={`nav-btn${page === link.page ? ' active' : ''}`}
+              onClick={() => setPage(link.page)}
+            >
+              {link.label}
+            </button>
           ))}
         </nav>
       </header>
 
       <main className="app-main">
-        <h1>Dashboard</h1>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Drop a document into your watch folder to start the pipeline — AI classifies, converts, and routes it automatically.
-        </p>
-
-        <div className="dashboard-grid">
-          {FEATURES.map(f => (
-            <div key={f.href} className="card feature-card">
-              <div className="card-icon">{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.description}</p>
-              <div className="card-footer">
-                <a href={f.href} className="btn btn-outline">{f.action}</a>
-              </div>
-            </div>
-          ))}
-        </div>
+        {renderPage()}
       </main>
 
       <footer className="app-footer">
