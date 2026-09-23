@@ -1,7 +1,6 @@
 using DocImageSort.Api.Data;
 using DocImageSort.Api.Models;
 using DocImageSort.Api.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using AppLogLevel = DocImageSort.Api.Models.LogLevel;
 
 namespace DocImageSort.Api.Services;
@@ -15,13 +14,16 @@ public class DocumentPipelineService : IDocumentPipelineService
         new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
 
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IClassificationService _classifier;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
         IServiceScopeFactory scopeFactory,
+        IClassificationService classifier,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
+        _classifier = classifier;
         _logger = logger;
     }
 
@@ -62,7 +64,24 @@ public class DocumentPipelineService : IDocumentPipelineService
 
             _logger.LogInformation("Document {Id} ingested: {File}", document.Id, fileName);
 
-            // TODO: Step 2 — AI classification (item 5)
+            // Step 2 — AI classification
+            var classification = await _classifier.ClassifyAsync(filePath, cancellationToken);
+
+            document.DocumentType = classification.DocumentType;
+            document.AiClassificationNotes = classification.Notes;
+            document.Status = classification.Success ? DocumentStatus.Classified : DocumentStatus.Error;
+            if (DateTime.TryParse(classification.DocumentDate, out var parsedDate))
+                document.DocumentDate = parsedDate;
+            document.UpdatedBy = "system";
+            document.UpdatedDate = DateTime.UtcNow;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            await LogAsync(db, document.Id, fileName, "Classify", classification.Success ? "Success" : "Error",
+                $"{classification.DocumentType} — {classification.Notes}", AppLogLevel.Info, cancellationToken);
+
+            _logger.LogInformation("Document {Id} classified as: {Type}", document.Id, classification.DocumentType);
+
             // TODO: Step 3 — PDF conversion (item 7)
             // TODO: Step 4 — Auto-rename (item 8)
             // TODO: Step 5 — Auto-route (item 9)
