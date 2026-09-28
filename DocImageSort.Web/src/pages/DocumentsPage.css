@@ -194,6 +194,37 @@
   margin-bottom: 12px;
 }
 
+/* ── Bulk action bar ──────────────────────────────────── */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--green-dark);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.bulk-count {
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+}
+.btn-sm { padding: 5px 14px; font-size: 13px; }
+.btn-outline.btn-sm { color: var(--white); border-color: rgba(255,255,255,0.5); }
+.btn-outline.btn-sm:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Checkbox column ──────────────────────────────────── */
+.cb-cell {
+  width: 36px;
+  text-align: center;
+  padding-left: 10px !important;
+  padding-right: 4px !important;
+}
+.cb-cell input[type="checkbox"] { cursor: pointer; accent-color: var(--green-dark); }
+
+.row-selected td { background: #f0faf4; }
+
 /* ── AI notes callout ─────────────────────────────────── */
 .ai-notes {
   font-size: 12px;

@@ -47,14 +47,6 @@ const FEATURES: { icon: string; title: string; description: string; action: stri
   },
 ]
 
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div>
-      <h1>{title}</h1>
-      <p style={{ color: 'var(--text-muted)' }}>This section is coming soon.</p>
-    </div>
-  )
-}
 
 function Dashboard({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (

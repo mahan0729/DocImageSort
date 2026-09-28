@@ -5,8 +5,10 @@ namespace DocImageSort.Api.Services;
 
 /// <summary>
 /// Generates and applies standardized file names.
-/// Format: LastName,FirstName_DocType_Date.pdf
-/// Pre-assignment: PENDING_DocType_Date.pdf
+/// Format: [LoanNumber]_[DocumentType]_[MMDDYY].pdf  (Chance Nelson convention)
+/// Pre-assignment: PENDING_[DocumentType]_[MMDDYY].pdf
+/// Only A–Z, a–z, 0–9, and _ are allowed; spaces become underscores.
+/// W2 encodes tax year in the type segment: W2_YY (e.g. W2_24).
 /// </summary>
 public class RenameService : IRenameService
 {
@@ -20,17 +22,30 @@ public class RenameService : IRenameService
     /// <inheritdoc/>
     public string GenerateFileName(Document document, Borrower? borrower = null)
     {
-        var borrowerPart = borrower is not null
-            ? Sanitize($"{borrower.LastName},{borrower.FirstName}")
+        var loanPart = borrower is not null
+            ? Sanitize(borrower.LoanNumber)
             : "PENDING";
 
         var docType = Sanitize(document.DocumentType ?? "Unknown");
 
-        var datePart = document.DocumentDate.HasValue
-            ? document.DocumentDate.Value.ToString("yyyy-MM")
-            : DateTime.UtcNow.ToString("yyyy-MM");
+        // W2: embed tax year inside the type segment → W2_24
+        if (document.DocumentType == "W2")
+        {
+            var taxYear = document.DocumentDate.HasValue
+                ? document.DocumentDate.Value.ToString("yy")
+                : DateTime.UtcNow.ToString("yy");
+            docType = $"W2_{taxYear}";
+        }
 
-        return $"{borrowerPart}_{docType}_{datePart}.pdf";
+        var qualifier = string.IsNullOrWhiteSpace(document.DocumentQualifier)
+            ? null
+            : Sanitize(document.DocumentQualifier);
+
+        var date = DateTime.UtcNow.ToString("MMddyy");
+
+        var typePart = qualifier is not null ? $"{docType}_{qualifier}" : docType;
+
+        return $"{loanPart}_{typePart}_{date}.pdf";
     }
 
     /// <inheritdoc/>
@@ -68,10 +83,9 @@ public class RenameService : IRenameService
         }
     }
 
-    /// <summary>Strips characters that are invalid in file names.</summary>
-    private static string Sanitize(string input)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        return string.Concat(input.Select(c => invalid.Contains(c) ? '_' : c)).Trim();
-    }
+    /// <summary>Enforces [A-Za-z0-9_] per Chance's naming convention. Spaces become underscores; all other non-conforming chars are stripped.</summary>
+    private static string Sanitize(string input) =>
+        string.Concat(input.Select(c => c == ' ' ? '_' : char.IsLetterOrDigit(c) || c == '_' ? c : '\0'))
+              .Replace("\0", string.Empty)
+              .Trim('_');
 }

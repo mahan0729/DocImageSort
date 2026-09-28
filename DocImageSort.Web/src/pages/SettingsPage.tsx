@@ -3,7 +3,7 @@ import { settingsApi, type AppSettings } from '../api/settings'
 import './SettingsPage.css'
 
 export function SettingsPage() {
-  const [settings, setSettings]   = useState<AppSettings | null>(null)
+  const [, setSettings]   = useState<AppSettings | null>(null)
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')

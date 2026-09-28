@@ -27,7 +27,7 @@ public class ConversionService : IConversionService
 
         try
         {
-            var outputPath = Path.ChangeExtension(filePath, ".pdf");
+            var outputPath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetFileName(filePath), ".pdf"));
 
             using var image = XImage.FromFile(filePath);
             using var document = new PdfDocument();

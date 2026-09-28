@@ -72,4 +72,11 @@ public class Document : BaseEntity
     /// <summary>SHA-256 hex hash of the file contents, used for duplicate detection.</summary>
     [Column(Order = 11)]
     public string FileHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Document-type-specific qualifier included in the file name.
+    /// W2: employee name. Bank Statement: "InstitutionName AccountType" (e.g. "Chase Checking").
+    /// </summary>
+    [Column(Order = 12)]
+    public string DocumentQualifier { get; set; } = string.Empty;
 }

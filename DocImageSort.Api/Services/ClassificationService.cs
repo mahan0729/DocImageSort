@@ -23,8 +23,11 @@ public class ClassificationService : IClassificationService
         Respond with this exact JSON structure:
         {
           "documentType": "<type from list above>",
-          "documentDate": "<YYYY-MM or YYYY if found, null if not found>",
-          "notes": "<brief description of what you see, max 100 chars>"
+          "documentDate": "<YYYY-MM-DD if exact day found, YYYY-MM if only month found, YYYY if only year found, null if not found>",
+          "notes": "<brief description of what you see, max 100 chars>",
+          "subjectName": "<W2 only: employee full name as printed on the form; null for all other document types>",
+          "accountType": "<Bank Statement only: account type such as Checking, Savings, Money Market, etc.; null for all other document types>",
+          "institutionName": "<Bank Statement only: bank or institution name such as Chase, Wells Fargo, etc.; null for all other document types>"
         }
         """;
 
@@ -139,11 +142,14 @@ public class ClassificationService : IClassificationService
             using var doc = System.Text.Json.JsonDocument.Parse(clean);
             var root = doc.RootElement;
 
-            var docType = root.TryGetProperty("documentType", out var dt) ? dt.GetString() ?? "Unknown" : "Unknown";
-            var docDate = root.TryGetProperty("documentDate", out var dd) ? dd.GetString() : null;
-            var notes   = root.TryGetProperty("notes", out var n) ? n.GetString() ?? "" : "";
+            var docType         = root.TryGetProperty("documentType",   out var dt)  ? dt.GetString()  ?? "Unknown" : "Unknown";
+            var docDate         = root.TryGetProperty("documentDate",   out var dd)  ? dd.GetString()              : null;
+            var notes           = root.TryGetProperty("notes",          out var n)   ? n.GetString()   ?? ""       : "";
+            var subjectName     = root.TryGetProperty("subjectName",    out var sn)  ? sn.GetString()              : null;
+            var accountType     = root.TryGetProperty("accountType",    out var at)  ? at.GetString()              : null;
+            var institutionName = root.TryGetProperty("institutionName", out var ins) ? ins.GetString()             : null;
 
-            return new ClassificationResult(docType, docDate, notes, true);
+            return new ClassificationResult(docType, docDate, notes, true, subjectName, accountType, institutionName);
         }
         catch
         {

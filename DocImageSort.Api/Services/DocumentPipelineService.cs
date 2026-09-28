@@ -108,8 +108,8 @@ public class DocumentPipelineService : IDocumentPipelineService
             document.DocumentType = classification.DocumentType;
             document.AiClassificationNotes = classification.Notes;
             document.Status = classification.Success ? DocumentStatus.Classified : DocumentStatus.Error;
-            if (DateTime.TryParse(classification.DocumentDate, out var parsedDate))
-                document.DocumentDate = parsedDate;
+            document.DocumentDate = ParseDocumentDate(classification.DocumentDate);
+            document.DocumentQualifier = BuildQualifier(classification);
             document.UpdatedBy = "system";
             document.UpdatedDate = DateTime.UtcNow;
 
@@ -159,6 +159,13 @@ public class DocumentPipelineService : IDocumentPipelineService
                 $"Filed to: {filedPath}", AppLogLevel.Info, cancellationToken);
 
             _logger.LogInformation("Document {Id} pipeline complete. Filed: {Path}", document.Id, filedPath);
+
+            // Delete original from Drop (JPG/PNG stays behind after conversion; PDF was moved by rename)
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                _logger.LogInformation("Deleted original drop file: {File}", fileName);
+            }
         }
         catch (Exception ex)
         {
@@ -176,6 +183,24 @@ public class DocumentPipelineService : IDocumentPipelineService
             }
         }
     }
+
+    private static DateTime? ParseDocumentDate(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (DateTime.TryParse(raw, out var dt)) return dt;
+        // Year-only string like "2024" — TryParse rejects it
+        if (int.TryParse(raw.Trim(), out var year) && year >= 1900 && year <= 2100)
+            return new DateTime(year, 1, 1);
+        return null;
+    }
+
+    private static string BuildQualifier(ClassificationResult r) => r.DocumentType switch
+    {
+        "W2"             => r.SubjectName     ?? string.Empty,
+        "Bank Statement" => string.Join(" ", new[] { r.InstitutionName, r.AccountType }
+                               .Where(s => !string.IsNullOrWhiteSpace(s))),
+        _                => string.Empty
+    };
 
     private static async Task LogAsync(
         AppDbContext db,

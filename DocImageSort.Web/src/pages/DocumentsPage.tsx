@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { documentsApi, type Document } from '../api/documents'
 import { borrowersApi, type Borrower } from '../api/borrowers'
 import './DocumentsPage.css'
@@ -76,22 +76,23 @@ function CorrectTypeModal({ doc, docTypes, onSave, onClose }: CorrectTypeModalPr
   )
 }
 
-// ── Assign-borrower modal ─────────────────────────────────────────────────────
+// ── Assign-borrower modal (single or bulk) ────────────────────────────────────
 
 interface AssignModalProps {
-  doc: Document
-  onSave: (updated: Document) => void
+  docs: Document[]
+  onSave: (updated: Document[]) => void
   onClose: () => void
 }
 
-function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
+function AssignModal({ docs, onSave, onClose }: AssignModalProps) {
   const [borrowers, setBorrowers]   = useState<Borrower[]>([])
   const [search, setSearch]         = useState('')
   const [selectedId, setSelectedId] = useState<number | ''>('')
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
 
-  // Debounced borrower search
+  const isBulk = docs.length > 1
+
   useEffect(() => {
     const id = setTimeout(async () => {
       try {
@@ -106,7 +107,6 @@ function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
     return () => clearTimeout(id)
   }, [search])
 
-  // Load all on mount
   useEffect(() => {
     borrowersApi.getAll().then(setBorrowers).catch(() => {})
   }, [])
@@ -117,8 +117,10 @@ function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
     setSaving(true)
     setError('')
     try {
-      const updated = await documentsApi.assign(doc.id, selectedId as number)
-      onSave(updated)
+      const results = await Promise.all(
+        docs.map(d => documentsApi.assign(d.id, selectedId as number))
+      )
+      onSave(results)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Assign failed.')
     } finally {
@@ -130,7 +132,11 @@ function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h2>Assign Borrower</h2>
-        <p className="modal-subtitle">{doc.originalFileName} — {doc.documentType}</p>
+        <p className="modal-subtitle">
+          {isBulk
+            ? `${docs.length} documents selected`
+            : `${docs[0].originalFileName} — ${docs[0].documentType}`}
+        </p>
 
         <form onSubmit={handleAssign}>
           {error && <div className="error-msg">{error}</div>}
@@ -172,7 +178,7 @@ function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
               className="btn btn-primary"
               disabled={saving || !selectedId}
             >
-              {saving ? 'Filing…' : 'Assign & File'}
+              {saving ? 'Filing…' : isBulk ? `Assign & File ${docs.length} Documents` : 'Assign & File'}
             </button>
           </div>
         </form>
@@ -184,14 +190,16 @@ function AssignModal({ doc, onSave, onClose }: AssignModalProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function DocumentsPage() {
-  const [docs, setDocs]           = useState<Document[]>([])
-  const [docTypes, setDocTypes]   = useState<string[]>([])
-  const [statusFilter, setStatus] = useState('All')
-  const [search, setSearch]       = useState('')
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [correcting, setCorrecting] = useState<Document | null>(null)
-  const [assigning, setAssigning]   = useState<Document | null>(null)
+  const [docs, setDocs]               = useState<Document[]>([])
+  const [docTypes, setDocTypes]       = useState<string[]>([])
+  const [statusFilter, setStatus]     = useState('All')
+  const [search, setSearch]           = useState('')
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState('')
+  const [correcting, setCorrecting]   = useState<Document | null>(null)
+  const [assignDocs, setAssignDocs]   = useState<Document[] | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const selectAllRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async (status: string, term: string) => {
     setLoading(true)
@@ -202,6 +210,8 @@ export function DocumentsPage() {
         term || undefined
       )
       setDocs(data)
+      // Auto-select unassigned docs (fresh from drop folder)
+      setSelectedIds(new Set(data.filter(d => !d.borrowerId).map(d => d.id)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load documents.')
     } finally {
@@ -209,24 +219,55 @@ export function DocumentsPage() {
     }
   }, [])
 
-  // Load doc types once
   useEffect(() => {
     documentsApi.getTypes().then(setDocTypes).catch(() => {})
   }, [])
 
   useEffect(() => { load(statusFilter, search) }, [statusFilter, load])
 
-  // Debounce search
   useEffect(() => {
     const id = setTimeout(() => load(statusFilter, search), 300)
     return () => clearTimeout(id)
   }, [search, statusFilter, load])
 
+  // Keep select-all checkbox indeterminate state in sync
+  useEffect(() => {
+    if (!selectAllRef.current) return
+    const count = selectedIds.size
+    const total = docs.length
+    selectAllRef.current.indeterminate = count > 0 && count < total
+  }, [selectedIds, docs])
+
+  function toggleOne(id: number) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === docs.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(docs.map(d => d.id)))
+    }
+  }
+
   function handleUpdated(updated: Document) {
     setDocs(prev => prev.map(d => d.id === updated.id ? updated : d))
     setCorrecting(null)
-    setAssigning(null)
+    setAssignDocs(null)
   }
+
+  function handleBulkUpdated(updated: Document[]) {
+    const map = new Map(updated.map(d => [d.id, d]))
+    setDocs(prev => prev.map(d => map.get(d.id) ?? d))
+    setSelectedIds(new Set())
+    setAssignDocs(null)
+  }
+
+  const selectedDocs = docs.filter(d => selectedIds.has(d.id))
 
   return (
     <div>
@@ -254,6 +295,24 @@ export function DocumentsPage() {
         />
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-count">{selectedIds.size} selected</span>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setAssignDocs(selectedDocs)}
+          >
+            Assign to Borrower
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {error && <div className="error-msg">{error}</div>}
 
       {loading ? (
@@ -271,6 +330,15 @@ export function DocumentsPage() {
           <table className="docs-table">
             <thead>
               <tr>
+                <th className="cb-cell">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={selectedIds.size === docs.length && docs.length > 0}
+                    onChange={toggleAll}
+                    title="Select all"
+                  />
+                </th>
                 <th>Original File</th>
                 <th>Document Type</th>
                 <th>Status</th>
@@ -281,7 +349,14 @@ export function DocumentsPage() {
             </thead>
             <tbody>
               {docs.map(d => (
-                <tr key={d.id}>
+                <tr key={d.id} className={selectedIds.has(d.id) ? 'row-selected' : ''}>
+                  <td className="cb-cell">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(d.id)}
+                      onChange={() => toggleOne(d.id)}
+                    />
+                  </td>
                   <td><span className="file-name" title={d.originalFileName}>{d.originalFileName}</span></td>
                   <td>{d.documentType || '—'}</td>
                   <td>
@@ -290,7 +365,6 @@ export function DocumentsPage() {
                   <td>{d.borrowerName ?? <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>}</td>
                   <td>{d.documentDate ?? '—'}</td>
                   <td className="actions-cell">
-                    {/* Correct type — always available */}
                     <button
                       className="icon-btn"
                       title="Correct document type"
@@ -298,12 +372,11 @@ export function DocumentsPage() {
                     >
                       ✏️
                     </button>
-                    {/* Assign borrower — only for unassigned docs */}
                     {!d.borrowerId && (
                       <button
                         className="icon-btn"
                         title="Assign to borrower"
-                        onClick={() => setAssigning(d)}
+                        onClick={() => setAssignDocs([d])}
                       >
                         📁
                       </button>
@@ -325,11 +398,13 @@ export function DocumentsPage() {
         />
       )}
 
-      {assigning && (
+      {assignDocs && (
         <AssignModal
-          doc={assigning}
-          onSave={handleUpdated}
-          onClose={() => setAssigning(null)}
+          docs={assignDocs}
+          onSave={assignDocs.length === 1
+            ? (updated) => handleUpdated(updated[0])
+            : handleBulkUpdated}
+          onClose={() => setAssignDocs(null)}
         />
       )}
     </div>
