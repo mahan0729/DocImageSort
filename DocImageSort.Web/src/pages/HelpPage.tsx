@@ -130,8 +130,14 @@ export function HelpPage() {
             <h3>Actions</h3>
             <ul>
               <li><b>✏️ Correct type</b> — opens a dropdown to fix the AI's document type if it was wrong.</li>
-              <li><b>📁 Assign borrower</b> — search for a borrower and click <b>Assign &amp; File</b>. This renames the file from <code>PENDING_</code> to <code>LastName,FirstName_</code> and moves it to the borrower's folder. This action cannot be undone from the UI.</li>
+              <li><b>📁 Assign borrower</b> — search for a borrower and click <b>Assign &amp; File</b>. Renames the file to <code>[LoanNumber]_[DocType]_[MMDDYY].pdf</code> and moves it to the borrower's folder.</li>
             </ul>
+            <h3>Bulk assign</h3>
+            <p>
+              Unassigned documents are automatically checked when the page loads. Use the checkboxes to select
+              multiple documents, then click <b>Assign to Borrower</b> in the green bar to file them all at once.
+              The select-all checkbox in the header checks or clears all rows.
+            </p>
             <div className="help-tip">
               <strong>Tip:</strong> Correct the document type <em>before</em> assigning a borrower — the final file name includes the document type.
             </div>
@@ -219,18 +225,31 @@ export function HelpPage() {
           <section id="file-naming" className="help-section">
             <h2>📝 File Naming Convention</h2>
 
+            <p>Format: <code>[LoanNumber]_[DocumentType]_[MMDDYY].pdf</code></p>
+            <p>Only letters (A–Z, a–z), numbers (0–9), and underscores are used. Spaces become underscores; all other characters are removed.</p>
+
             <table className="help-table">
               <thead><tr><th>Situation</th><th>File Name</th><th>Location</th></tr></thead>
               <tbody>
                 <tr>
                   <td>Borrower assigned</td>
-                  <td><code>Smith,John_Pay Stub_2026-08.pdf</code></td>
-                  <td><code>Files\Smith,John\</code></td>
+                  <td><code>L12345_Pay_Stub_092826.pdf</code></td>
+                  <td><code>Files\L12345\</code></td>
                 </tr>
                 <tr>
                   <td>Not yet assigned</td>
-                  <td><code>PENDING_Pay Stub_2026-08.pdf</code></td>
+                  <td><code>PENDING_Pay_Stub_092826.pdf</code></td>
                   <td><code>Files\PENDING\</code></td>
+                </tr>
+                <tr>
+                  <td>W2 document</td>
+                  <td><code>L12345_W2_24_092826.pdf</code></td>
+                  <td>Tax year (YY) is embedded in the type</td>
+                </tr>
+                <tr>
+                  <td>Bank Statement</td>
+                  <td><code>L12345_Bank_Statement_Chase_Checking_092826.pdf</code></td>
+                  <td>Bank name and account type included</td>
                 </tr>
                 <tr>
                   <td>Duplicate detected</td>
@@ -239,14 +258,14 @@ export function HelpPage() {
                 </tr>
                 <tr>
                   <td>Name conflict</td>
-                  <td><code>Smith,John_Pay Stub_2026-08_1.pdf</code></td>
+                  <td><code>L12345_Pay_Stub_092826_1.pdf</code></td>
                   <td>Counter suffix added automatically</td>
                 </tr>
               </tbody>
             </table>
 
-            <h3>Date format</h3>
-            <p>The date in the file name is <code>YYYY-MM</code> (year and month). If the AI cannot find a date on the document, the current month is used.</p>
+            <h3>Date in file name</h3>
+            <p>The date (<code>MMDDYY</code>) is always today's filing date — the day the document was processed. For W2s, the tax year (2-digit) is included in the document type segment.</p>
           </section>
 
           {/* ── Document Types ── */}

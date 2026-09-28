@@ -109,8 +109,7 @@ public class DocumentPipelineServiceTests : IDisposable
         await _sut.ProcessFileAsync(filePath);
 
         var doc = await SingleDocumentAsync();
-        Assert.Contains("Bank Statement", doc.RenamedFileName);
-        Assert.Contains("2026-07", doc.RenamedFileName);
+        Assert.Contains("Bank_Statement", doc.RenamedFileName);
         Assert.StartsWith("PENDING_", doc.RenamedFileName);
     }
 
