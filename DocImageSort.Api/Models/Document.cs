@@ -79,4 +79,11 @@ public class Document : BaseEntity
     /// </summary>
     [Column(Order = 12)]
     public string DocumentQualifier { get; set; } = string.Empty;
+
+    /// <summary>
+    /// End date of the document period (e.g. bank statement end date).
+    /// Null if the document covers a single date or the end date is not found.
+    /// </summary>
+    [Column(Order = 13)]
+    public DateTime? DocumentEndDate { get; set; }
 }

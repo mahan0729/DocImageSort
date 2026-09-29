@@ -5,10 +5,12 @@ namespace DocImageSort.Api.Services;
 
 /// <summary>
 /// Generates and applies standardized file names.
-/// Format: [LoanNumber]_[DocumentType]_[MMDDYY].pdf  (Chance Nelson convention)
-/// Pre-assignment: PENDING_[DocumentType]_[MMDDYY].pdf
+/// Format: [LastName]_[FirstName]_[DocumentType]_[Qualifier]_[MMDDYYYY].pdf
+/// Date range format (bank statements): [LastName]_[FirstName]_[DocumentType]_[Qualifier]_[MMDDYYYYtoMMDDYYYY].pdf
+/// Pre-assignment: PENDING_[DocumentType]_[Qualifier]_[MMDDYYYY].pdf
 /// Only A–Z, a–z, 0–9, and _ are allowed; spaces become underscores.
-/// W2 encodes tax year in the type segment: W2_YY (e.g. W2_24).
+/// W2 encodes tax year in the type segment: W2_YYYY (e.g. W2_2024).
+/// 1099 types encode tax year in the type segment: 1099_Composite_2024.
 /// </summary>
 public class RenameService : IRenameService
 {
@@ -22,30 +24,54 @@ public class RenameService : IRenameService
     /// <inheritdoc/>
     public string GenerateFileName(Document document, Borrower? borrower = null)
     {
-        var loanPart = borrower is not null
-            ? Sanitize(borrower.LoanNumber)
+        var namePart = borrower is not null
+            ? $"{Sanitize(borrower.LastName)}_{Sanitize(borrower.FirstName)}"
             : "PENDING";
 
         var docType = Sanitize(document.DocumentType ?? "Unknown");
 
-        // W2: embed tax year inside the type segment → W2_24
+        // W2: embed tax year inside the type segment → W2_2024
         if (document.DocumentType == "W2")
         {
             var taxYear = document.DocumentDate.HasValue
-                ? document.DocumentDate.Value.ToString("yy")
-                : DateTime.UtcNow.ToString("yy");
+                ? document.DocumentDate.Value.ToString("yyyy")
+                : DateTime.UtcNow.ToString("yyyy");
             docType = $"W2_{taxYear}";
+        }
+
+        // 1099 types: embed tax year → 1099_Composite_2024
+        if (document.DocumentType is not null && document.DocumentType.StartsWith("1099"))
+        {
+            var taxYear = document.DocumentDate.HasValue
+                ? document.DocumentDate.Value.ToString("yyyy")
+                : DateTime.UtcNow.ToString("yyyy");
+            docType = $"{Sanitize(document.DocumentType)}_{taxYear}";
         }
 
         var qualifier = string.IsNullOrWhiteSpace(document.DocumentQualifier)
             ? null
             : Sanitize(document.DocumentQualifier);
 
-        var date = DateTime.UtcNow.ToString("MMddyy");
+        // Date: use document date if available, otherwise today. Full MMDDYYYY format.
+        var datePart = BuildDatePart(document);
 
         var typePart = qualifier is not null ? $"{docType}_{qualifier}" : docType;
 
-        return $"{loanPart}_{typePart}_{date}.pdf";
+        return $"{namePart}_{typePart}_{datePart}.pdf";
+    }
+
+    private static string BuildDatePart(Document document)
+    {
+        var start = document.DocumentDate ?? DateTime.UtcNow;
+        var startStr = start.ToString("MMddyyyy");
+
+        if (document.DocumentEndDate.HasValue && document.DocumentEndDate.Value != document.DocumentDate)
+        {
+            var endStr = document.DocumentEndDate.Value.ToString("MMddyyyy");
+            return $"{startStr}to{endStr}";
+        }
+
+        return startStr;
     }
 
     /// <inheritdoc/>

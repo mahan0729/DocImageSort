@@ -18,16 +18,18 @@ public class ClassificationService : IClassificationService
         Insurance Declaration, Title Report, Appraisal, Purchase Contract,
         Credit Report, VOE (Verification of Employment), VOD (Verification of Deposits),
         Driver License, Social Security Card, Gift Letter, HOA Documents,
-        Flood Certification, Unknown
+        Flood Certification, 1099-INT, 1099-DIV, 1099-B, 1099-MISC, 1099-NEC,
+        1099 Composite, Unknown
 
         Respond with this exact JSON structure:
         {
           "documentType": "<type from list above>",
-          "documentDate": "<YYYY-MM-DD if exact day found, YYYY-MM if only month found, YYYY if only year found, null if not found>",
+          "documentDate": "<start date: YYYY-MM-DD if exact day found, YYYY-MM if only month found, YYYY if only year found, null if not found>",
+          "documentEndDate": "<end date for period documents (bank statements, etc.): YYYY-MM-DD, YYYY-MM, or YYYY format. null if document covers a single date or end date is not found>",
           "notes": "<brief description of what you see, max 100 chars>",
           "subjectName": "<W2 only: employee full name as printed on the form; null for all other document types>",
           "accountType": "<Bank Statement only: account type such as Checking, Savings, Money Market, etc.; null for all other document types>",
-          "institutionName": "<Bank Statement only: bank or institution name such as Chase, Wells Fargo, etc.; null for all other document types>"
+          "institutionName": "<Bank Statement only: bank or institution name such as Chase, Wells Fargo, Schwab, Regions, etc.; null for all other document types>"
         }
         """;
 
@@ -142,14 +144,15 @@ public class ClassificationService : IClassificationService
             using var doc = System.Text.Json.JsonDocument.Parse(clean);
             var root = doc.RootElement;
 
-            var docType         = root.TryGetProperty("documentType",   out var dt)  ? dt.GetString()  ?? "Unknown" : "Unknown";
-            var docDate         = root.TryGetProperty("documentDate",   out var dd)  ? dd.GetString()              : null;
-            var notes           = root.TryGetProperty("notes",          out var n)   ? n.GetString()   ?? ""       : "";
-            var subjectName     = root.TryGetProperty("subjectName",    out var sn)  ? sn.GetString()              : null;
-            var accountType     = root.TryGetProperty("accountType",    out var at)  ? at.GetString()              : null;
+            var docType         = root.TryGetProperty("documentType",    out var dt)  ? dt.GetString()  ?? "Unknown" : "Unknown";
+            var docDate         = root.TryGetProperty("documentDate",    out var dd)  ? dd.GetString()              : null;
+            var docEndDate      = root.TryGetProperty("documentEndDate", out var ded) ? ded.GetString()             : null;
+            var notes           = root.TryGetProperty("notes",           out var n)   ? n.GetString()   ?? ""       : "";
+            var subjectName     = root.TryGetProperty("subjectName",     out var sn)  ? sn.GetString()              : null;
+            var accountType     = root.TryGetProperty("accountType",     out var at)  ? at.GetString()              : null;
             var institutionName = root.TryGetProperty("institutionName", out var ins) ? ins.GetString()             : null;
 
-            return new ClassificationResult(docType, docDate, notes, true, subjectName, accountType, institutionName);
+            return new ClassificationResult(docType, docDate, notes, true, subjectName, accountType, institutionName, docEndDate);
         }
         catch
         {

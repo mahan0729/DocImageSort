@@ -17,7 +17,8 @@ public record ClassificationResult(
     bool    Success,
     string? SubjectName     = null,
     string? AccountType     = null,
-    string? InstitutionName = null
+    string? InstitutionName = null,
+    string? DocumentEndDate = null
 );
 
 /// <summary>

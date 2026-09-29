@@ -109,6 +109,7 @@ public class DocumentPipelineService : IDocumentPipelineService
             document.AiClassificationNotes = classification.Notes;
             document.Status = classification.Success ? DocumentStatus.Classified : DocumentStatus.Error;
             document.DocumentDate = ParseDocumentDate(classification.DocumentDate);
+            document.DocumentEndDate = ParseDocumentDate(classification.DocumentEndDate);
             document.DocumentQualifier = BuildQualifier(classification);
             document.UpdatedBy = "system";
             document.UpdatedDate = DateTime.UtcNow;
