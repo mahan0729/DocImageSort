@@ -13,11 +13,12 @@ const TOC = [
 ]
 
 const DOC_TYPES = [
-  'Pay Stub', 'Bank Statement', 'W-2', '1040 Tax Return', '1099',
-  "Driver's License", 'Social Security Card', 'Mortgage Statement',
-  'Homeowners Insurance', 'Purchase Agreement', 'Appraisal Report',
-  'Title Report', 'HOA Statement', 'Gift Letter',
-  'Verification of Employment', 'Unknown',
+  'Pay Stub', 'Bank Statement', 'W2', 'Tax Return (1040)', '1003 Loan Application',
+  '1099-INT', '1099-DIV', '1099-B', '1099-MISC', '1099-NEC', '1099 Composite',
+  "Driver License", 'Social Security Card', 'Gift Letter',
+  'Insurance Declaration', 'Title Report', 'Appraisal', 'Purchase Contract',
+  'Credit Report', 'VOE (Verification of Employment)', 'VOD (Verification of Deposits)',
+  'Flood Certification', 'HOA Documents', 'Unknown',
 ]
 
 const STATUSES = [
@@ -130,7 +131,7 @@ export function HelpPage() {
             <h3>Actions</h3>
             <ul>
               <li><b>✏️ Correct type</b> — opens a dropdown to fix the AI's document type if it was wrong.</li>
-              <li><b>📁 Assign borrower</b> — search for a borrower and click <b>Assign &amp; File</b>. Renames the file to <code>[LoanNumber]_[DocType]_[MMDDYY].pdf</code> and moves it to the borrower's folder.</li>
+              <li><b>📁 Assign borrower</b> — search for a borrower and click <b>Assign &amp; File</b>. Renames the file to <code>[LastName]_[FirstName]_[DocType]_[MMDDYYYY].pdf</code> and moves it to the borrower's folder.</li>
             </ul>
             <h3>Bulk assign</h3>
             <p>
@@ -225,31 +226,36 @@ export function HelpPage() {
           <section id="file-naming" className="help-section">
             <h2>📝 File Naming Convention</h2>
 
-            <p>Format: <code>[LoanNumber]_[DocumentType]_[MMDDYY].pdf</code></p>
+            <p>Format: <code>[LastName]_[FirstName]_[DocumentType]_[MMDDYYYY].pdf</code></p>
             <p>Only letters (A–Z, a–z), numbers (0–9), and underscores are used. Spaces become underscores; all other characters are removed.</p>
 
             <table className="help-table">
-              <thead><tr><th>Situation</th><th>File Name</th><th>Location</th></tr></thead>
+              <thead><tr><th>Situation</th><th>File Name</th><th>Notes</th></tr></thead>
               <tbody>
                 <tr>
                   <td>Borrower assigned</td>
-                  <td><code>L12345_Pay_Stub_092826.pdf</code></td>
-                  <td><code>Files\L12345\</code></td>
+                  <td><code>Smith_John_Pay_Stub_09282026.pdf</code></td>
+                  <td>Filed to <code>Files\Smith,John\</code></td>
                 </tr>
                 <tr>
                   <td>Not yet assigned</td>
-                  <td><code>PENDING_Pay_Stub_092826.pdf</code></td>
-                  <td><code>Files\PENDING\</code></td>
+                  <td><code>PENDING_Pay_Stub_09282026.pdf</code></td>
+                  <td>Filed to <code>Files\PENDING\</code></td>
                 </tr>
                 <tr>
                   <td>W2 document</td>
-                  <td><code>L12345_W2_24_092826.pdf</code></td>
-                  <td>Tax year (YY) is embedded in the type</td>
+                  <td><code>Smith_John_W2_2024_09282026.pdf</code></td>
+                  <td>Tax year (4-digit) embedded in type</td>
                 </tr>
                 <tr>
-                  <td>Bank Statement</td>
-                  <td><code>L12345_Bank_Statement_Chase_Checking_092826.pdf</code></td>
-                  <td>Bank name and account type included</td>
+                  <td>1099 document</td>
+                  <td><code>Smith_John_1099_Composite_2024_09282026.pdf</code></td>
+                  <td>Tax year (4-digit) embedded in type</td>
+                </tr>
+                <tr>
+                  <td>Bank Statement (period)</td>
+                  <td><code>Smith_John_Bank_Statement_Chase_Checking_01012026to01312026.pdf</code></td>
+                  <td>Start-to-end date range when AI finds both dates</td>
                 </tr>
                 <tr>
                   <td>Duplicate detected</td>
@@ -258,14 +264,14 @@ export function HelpPage() {
                 </tr>
                 <tr>
                   <td>Name conflict</td>
-                  <td><code>L12345_Pay_Stub_092826_1.pdf</code></td>
+                  <td><code>Smith_John_Pay_Stub_09282026_1.pdf</code></td>
                   <td>Counter suffix added automatically</td>
                 </tr>
               </tbody>
             </table>
 
             <h3>Date in file name</h3>
-            <p>The date (<code>MMDDYY</code>) is always today's filing date — the day the document was processed. For W2s, the tax year (2-digit) is included in the document type segment.</p>
+            <p>The date (<code>MMDDYYYY</code>) is the document's own date as identified by AI — not today's date. For bank statements and other period documents, the date shows as a range (<code>MMDDYYYYtoMMDDYYYY</code>). For W2s and 1099s, the tax year is also embedded in the document type segment.</p>
           </section>
 
           {/* ── Document Types ── */}
