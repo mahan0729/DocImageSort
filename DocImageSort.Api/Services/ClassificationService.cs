@@ -19,17 +19,26 @@ public class ClassificationService : IClassificationService
         Credit Report, VOE (Verification of Employment), VOD (Verification of Deposits),
         Driver License, Social Security Card, Gift Letter, HOA Documents,
         Flood Certification, 1099-INT, 1099-DIV, 1099-B, 1099-MISC, 1099-NEC,
-        1099 Composite, Unknown
+        1099 Composite, Mortgage Statement, Lease Agreement, Award Letter,
+        Retirement Statement, Investment Account Statement, P&L Statement,
+        Schedule C, Schedule E, K-1, SSA-89, LOE (Letter of Explanation),
+        Divorce Decree, Bankruptcy (Chapter 7), Bankruptcy (Chapter 13),
+        Child Support Order, Alimony Agreement, Business License,
+        Power of Attorney, Death Certificate, Quitclaim Deed, Trust Document,
+        Unknown
+
+        If the document does not match any type above but has a visible title printed on it,
+        use that title (in Title Case, max 50 chars) as the documentType instead of Unknown.
 
         Respond with this exact JSON structure:
         {
-          "documentType": "<type from list above>",
+          "documentType": "<type from list above, or document's printed title if no match>",
           "documentDate": "<start date: YYYY-MM-DD if exact day found, YYYY-MM if only month found, YYYY if only year found, null if not found>",
           "documentEndDate": "<end date for period documents (bank statements, etc.): YYYY-MM-DD, YYYY-MM, or YYYY format. null if document covers a single date or end date is not found>",
           "notes": "<brief description of what you see, max 100 chars>",
-          "subjectName": "<W2 only: employee full name as printed on the form; null for all other document types>",
-          "accountType": "<Bank Statement only: account type such as Checking, Savings, Money Market, etc.; null for all other document types>",
-          "institutionName": "<Bank Statement only: bank or institution name such as Chase, Wells Fargo, Schwab, Regions, etc.; null for all other document types>"
+          "subjectName": "<W2 and legal documents only: primary person's full name as printed; null for all other document types>",
+          "accountType": "<Bank Statement and Investment/Retirement only: account type such as Checking, Savings, 401K, IRA, etc.; null for all other document types>",
+          "institutionName": "<Bank Statement, Investment, and Retirement only: institution name such as Chase, Fidelity, Vanguard, etc.; null for all other document types>"
         }
         """;
 

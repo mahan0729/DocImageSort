@@ -197,10 +197,19 @@ public class DocumentPipelineService : IDocumentPipelineService
 
     private static string BuildQualifier(ClassificationResult r) => r.DocumentType switch
     {
-        "W2"             => r.SubjectName     ?? string.Empty,
-        "Bank Statement" => string.Join(" ", new[] { r.InstitutionName, r.AccountType }
-                               .Where(s => !string.IsNullOrWhiteSpace(s))),
-        _                => string.Empty
+        "W2"                    => r.SubjectName ?? string.Empty,
+        "Bank Statement"        => string.Join(" ", new[] { r.InstitutionName, r.AccountType }
+                                       .Where(s => !string.IsNullOrWhiteSpace(s))),
+        "Retirement Statement"  => string.Join(" ", new[] { r.InstitutionName, r.AccountType }
+                                       .Where(s => !string.IsNullOrWhiteSpace(s))),
+        "Investment Account Statement" => string.Join(" ", new[] { r.InstitutionName, r.AccountType }
+                                       .Where(s => !string.IsNullOrWhiteSpace(s))),
+        "Divorce Decree"        => r.SubjectName ?? string.Empty,
+        "Bankruptcy (Chapter 7)"  => r.SubjectName ?? string.Empty,
+        "Bankruptcy (Chapter 13)" => r.SubjectName ?? string.Empty,
+        "Child Support Order"   => r.SubjectName ?? string.Empty,
+        "Alimony Agreement"     => r.SubjectName ?? string.Empty,
+        _                       => string.Empty
     };
 
     private static async Task LogAsync(
