@@ -303,6 +303,61 @@ public class DocumentPipelineServiceTests : IDisposable
         Assert.Equal(64, doc.FileHash.Length); // SHA-256 = 64 hex chars
     }
 
+    // ── Qualifier logic for new doc types ────────────────────────────────────
+
+    [Theory]
+    [InlineData("Divorce Decree")]
+    [InlineData("Bankruptcy (Chapter 7)")]
+    [InlineData("Bankruptcy (Chapter 13)")]
+    [InlineData("Child Support Order")]
+    [InlineData("Alimony Agreement")]
+    public async Task ProcessFile_LegalDocWithSubjectName_QualifierIsSubjectName(string docType)
+    {
+        _classifier
+            .Setup(c => c.ClassifyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClassificationResult(docType, "2024-01", "Legal document.", true,
+                SubjectName: "Jane Doe"));
+
+        var filePath = await DropFileAsync($"{docType.Replace(" ", "_")}.pdf");
+        await _sut.ProcessFileAsync(filePath);
+
+        var doc = await SingleDocumentAsync();
+        Assert.Equal("Jane Doe", doc.DocumentQualifier);
+    }
+
+    [Theory]
+    [InlineData("Retirement Statement")]
+    [InlineData("Investment Account Statement")]
+    public async Task ProcessFile_FinancialStatementWithInstitution_QualifierIsInstitutionAndAccountType(string docType)
+    {
+        _classifier
+            .Setup(c => c.ClassifyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClassificationResult(docType, "2026-01", "Statement.", true,
+                AccountType: "401K", InstitutionName: "Fidelity"));
+
+        var filePath = await DropFileAsync("retirement.pdf");
+        await _sut.ProcessFileAsync(filePath);
+
+        var doc = await SingleDocumentAsync();
+        Assert.Contains("Fidelity", doc.DocumentQualifier);
+        Assert.Contains("401K", doc.DocumentQualifier);
+    }
+
+    [Fact]
+    public async Task ProcessFile_UnknownDocWithPrintedTitle_DocumentTypeIsTitleText()
+    {
+        _classifier
+            .Setup(c => c.ClassifyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ClassificationResult("Notice Of Default", "2026-03", "Title read from doc.", true));
+
+        var filePath = await DropFileAsync("notice.pdf");
+        await _sut.ProcessFileAsync(filePath);
+
+        var doc = await SingleDocumentAsync();
+        Assert.Equal("Notice Of Default", doc.DocumentType);
+        Assert.Contains("Notice_Of_Default", doc.RenamedFileName);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void DefaultClassifier(string docType, string docDate) =>
