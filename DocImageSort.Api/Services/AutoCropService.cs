@@ -151,7 +151,8 @@ public class AutoCropService : IAutoCropService
             var root       = doc.RootElement;
             var confidence = root.TryGetProperty("confidence", out var c) ? c.GetString() : "low";
 
-            if (string.Equals(confidence, "low", StringComparison.OrdinalIgnoreCase))
+            // Only crop when AI is highly confident — Chance's requirement: when in doubt, don't crop
+            if (!string.Equals(confidence, "high", StringComparison.OrdinalIgnoreCase))
                 return null;
 
             double Get(string name) => root.TryGetProperty(name, out var p) ? p.GetDouble() : 0;

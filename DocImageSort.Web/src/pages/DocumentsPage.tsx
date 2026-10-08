@@ -3,7 +3,7 @@ import { documentsApi, type Document } from '../api/documents'
 import { borrowersApi, type Borrower } from '../api/borrowers'
 import './DocumentsPage.css'
 
-const STATUS_FILTERS = ['All', 'Pending', 'Classified', 'Converted', 'Filed', 'Error']
+const STATUS_FILTERS = ['All', 'Unassigned', 'Filed', 'Duplicate', 'Error']
 
 // ── Correct-type modal ────────────────────────────────────────────────────────
 
@@ -201,21 +201,20 @@ export function DocumentsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const selectAllRef = useRef<HTMLInputElement>(null)
 
-  const load = useCallback(async (status: string, term: string) => {
-    setLoading(true)
+  const load = useCallback(async (status: string, term: string, silent = false) => {
+    if (!silent) setLoading(true)
     setError('')
     try {
-      const data = await documentsApi.getAll(
-        status === 'All' ? undefined : status,
-        term || undefined
-      )
-      setDocs(data)
+      const apiStatus = status === 'All' || status === 'Unassigned' ? undefined : status
+      const data = await documentsApi.getAll(apiStatus, term || undefined)
+      const filtered = status === 'Unassigned' ? data.filter(d => !d.borrowerId) : data
+      setDocs(filtered)
       // Auto-select unassigned docs (fresh from drop folder)
-      setSelectedIds(new Set(data.filter(d => !d.borrowerId).map(d => d.id)))
+      setSelectedIds(new Set(filtered.filter(d => !d.borrowerId).map(d => d.id)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load documents.')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
@@ -229,6 +228,12 @@ export function DocumentsPage() {
     const id = setTimeout(() => load(statusFilter, search), 300)
     return () => clearTimeout(id)
   }, [search, statusFilter, load])
+
+  // Auto-refresh every 10 seconds so new drop folder documents appear automatically
+  useEffect(() => {
+    const id = setInterval(() => load(statusFilter, search, true), 10_000)
+    return () => clearInterval(id)
+  }, [statusFilter, search, load])
 
   // Keep select-all checkbox indeterminate state in sync
   useEffect(() => {
@@ -323,6 +328,8 @@ export function DocumentsPage() {
             ? 'No documents match your search.'
             : statusFilter === 'All'
             ? 'No documents yet — drop a file into the watch folder to start the pipeline.'
+            : statusFilter === 'Unassigned'
+            ? 'No unassigned documents — all documents have been filed to a borrower.'
             : `No ${statusFilter} documents.`}
         </div>
       ) : (
