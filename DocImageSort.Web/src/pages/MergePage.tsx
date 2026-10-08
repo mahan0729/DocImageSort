@@ -23,6 +23,8 @@ export function MergePage() {
     const valid   = Array.from(incoming).filter(f => allowed.test(f.name))
     if (valid.length < incoming.length) {
       setError('Some files were skipped — only PDF, JPG, and PNG are accepted.')
+    } else {
+      setError(null) // clear any previous error when all files are valid
     }
     setFiles(prev => {
       const combined = [...prev, ...valid]

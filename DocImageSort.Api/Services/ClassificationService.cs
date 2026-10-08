@@ -197,10 +197,12 @@ public class ClassificationService : IClassificationService
 
             using var doc  = System.Text.Json.JsonDocument.Parse(clean);
             var root       = doc.RootElement;
-            var pageNumber = root.TryGetProperty("pageNumber", out var pn) && pn.ValueKind == System.Text.Json.JsonValueKind.Number
+            var rawPageNum  = root.TryGetProperty("pageNumber", out var pn) && pn.ValueKind == System.Text.Json.JsonValueKind.Number
                 ? pn.GetInt32() : (int?)null;
-            var totalPages = root.TryGetProperty("totalPages", out var tp) && tp.ValueKind == System.Text.Json.JsonValueKind.Number
+            var pageNumber  = rawPageNum is > 0 ? rawPageNum : null; // reject 0 and negatives
+            var rawTotal    = root.TryGetProperty("totalPages", out var tp) && tp.ValueKind == System.Text.Json.JsonValueKind.Number
                 ? tp.GetInt32() : (int?)null;
+            var totalPages  = rawTotal is > 0 ? rawTotal : null;
             var notes      = root.TryGetProperty("notes", out var n) ? n.GetString() ?? "" : "";
 
             return new MergePageResult(pageNumber, totalPages, notes, true);

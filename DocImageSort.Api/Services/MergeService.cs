@@ -50,32 +50,39 @@ public class MergeService : IMergeService
                 string.Join(", ", sorted.Select(p =>
                     $"p{p.PageNumber?.ToString() ?? "?"}={Path.GetFileName(p.OriginalPath)}")));
 
-            // Convert images → PDF (PDFs pass through unchanged)
+            // Convert images → PDF (PDFs pass through unchanged).
+            // Track in a list so temp files can be cleaned up in finally even if an error occurs mid-loop.
             var pdfPaths = new List<(string Path, bool IsTemp)>();
-            foreach (var page in sorted)
+            string mergedPath;
+            try
             {
-                var pdfPath = await _converter.ConvertToPdfAsync(page.OriginalPath, cancellationToken);
-                pdfPaths.Add((pdfPath, pdfPath != page.OriginalPath));
-            }
-
-            // Merge all pages into one PDF
-            var mergedPath = Path.Combine(Path.GetTempPath(), $"merge_{Guid.NewGuid():N}.pdf");
-            using (var outputDoc = new PdfDocument())
-            {
-                foreach (var (pdfPath, _) in pdfPaths)
+                foreach (var page in sorted)
                 {
-                    using var inputDoc = PdfReader.Open(pdfPath, PdfDocumentOpenMode.Import);
-                    for (var i = 0; i < inputDoc.PageCount; i++)
-                        outputDoc.AddPage(inputDoc.Pages[i]);
+                    var pdfPath = await _converter.ConvertToPdfAsync(page.OriginalPath, cancellationToken);
+                    pdfPaths.Add((pdfPath, pdfPath != page.OriginalPath));
                 }
-                outputDoc.Save(mergedPath);
-            }
 
-            // Clean up temp conversion files (original inputs are cleaned up by the controller)
-            foreach (var (pdfPath, isTemp) in pdfPaths)
+                // Merge all pages into one PDF
+                mergedPath = Path.Combine(Path.GetTempPath(), $"merge_{Guid.NewGuid():N}.pdf");
+                using (var outputDoc = new PdfDocument())
+                {
+                    foreach (var (pdfPath, _) in pdfPaths)
+                    {
+                        using var inputDoc = PdfReader.Open(pdfPath, PdfDocumentOpenMode.Import);
+                        for (var i = 0; i < inputDoc.PageCount; i++)
+                            outputDoc.AddPage(inputDoc.Pages[i]);
+                    }
+                    outputDoc.Save(mergedPath);
+                }
+            }
+            finally
             {
-                if (isTemp && File.Exists(pdfPath))
-                    File.Delete(pdfPath);
+                // Always clean up temp conversion files regardless of success or failure.
+                foreach (var (pdfPath, isTemp) in pdfPaths)
+                {
+                    if (isTemp && File.Exists(pdfPath))
+                        File.Delete(pdfPath);
+                }
             }
 
             _logger.LogInformation("Merged {Count} pages → {Output}", sorted.Count, Path.GetFileName(mergedPath));
