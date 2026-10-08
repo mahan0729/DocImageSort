@@ -42,6 +42,24 @@ public class ClassificationService : IClassificationService
         }
         """;
 
+    private static readonly string PageNumberPrompt = """
+        You are examining a single page from a multi-page document.
+        Your only task is to find the page number printed on this page.
+
+        Look for patterns like:
+        - "Page 2 of 4" or "Page 2"
+        - "2 of 4" or "2/4"
+        - A lone page number in the header or footer
+        - Roman numerals (i=1, ii=2, iii=3, iv=4, v=5)
+
+        Respond with JSON only:
+        {
+          "pageNumber": <integer page number, or null if not visible>,
+          "totalPages": <integer total if explicitly shown, or null>,
+          "notes": "<brief note, max 40 chars>"
+        }
+        """;
+
     private readonly IConfiguration _config;
     private readonly ILogger<ClassificationService> _logger;
 
@@ -63,75 +81,133 @@ public class ClassificationService : IClassificationService
                 return new ClassificationResult("Unknown", null, "API key not configured.", false);
             }
 
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            var fileBytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
-            var base64 = Convert.ToBase64String(fileBytes);
+            var fileContent = await BuildFileContentAsync(filePath, cancellationToken);
+            if (fileContent is null)
+                return new ClassificationResult("Unknown", null, "Unsupported file type.", false);
 
-            ContentBase fileContent;
-
-            if (ext == ".pdf")
-            {
-                fileContent = new DocumentContent
-                {
-                    Source = new DocumentSource
-                    {
-                        Type = SourceType.base64,
-                        Data = base64,
-                        MediaType = "application/pdf"
-                    }
-                };
-            }
-            else
-            {
-                var mediaType = ext switch
-                {
-                    ".jpg" or ".jpeg" => "image/jpeg",
-                    ".png" => "image/png",
-                    _ => null
-                };
-
-                if (mediaType is null)
-                    return new ClassificationResult("Unknown", null, "Unsupported file type.", false);
-
-                fileContent = new ImageContent
-                {
-                    Source = new ImageSource
-                    {
-                        MediaType = mediaType,
-                        Data = base64
-                    }
-                };
-            }
-
-            var client = new AnthropicClient(apiKey);
-
-            var request = new MessageParameters
-            {
-                Model = AnthropicModels.Claude46Sonnet,
-                MaxTokens = 512,
-                Messages = new List<Message>
-                {
-                    new()
-                    {
-                        Role = RoleType.User,
-                        Content = new List<ContentBase>
-                        {
-                            fileContent,
-                            new TextContent { Text = ClassificationPrompt }
-                        }
-                    }
-                }
-            };
-
-            var response = await client.Messages.GetClaudeMessageAsync(request, cancellationToken);
-            var raw = response.Content.OfType<TextContent>().FirstOrDefault()?.Text ?? "{}";
-
+            var raw = await SendToClaudeAsync(apiKey, fileContent, ClassificationPrompt, 512, cancellationToken);
             return ParseResponse(raw);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Classification failed for: {File}", filePath);
             return new ClassificationResult("Unknown", null, $"Classification error: {ex.Message}", false);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<MergePageResult> ClassifyPageNumberAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var apiKey = _config["Anthropic:ApiKey"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return new MergePageResult(null, null, "API key not configured.", false);
+
+            var fileContent = await BuildFileContentAsync(filePath, cancellationToken);
+            if (fileContent is null)
+                return new MergePageResult(null, null, "Unsupported file type.", false);
+
+            var raw = await SendToClaudeAsync(apiKey, fileContent, PageNumberPrompt, 128, cancellationToken);
+            return ParsePageNumberResponse(raw);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Page number classification failed for: {File}", filePath);
+            return new MergePageResult(null, null, $"Error: {ex.Message}", false);
+        }
+    }
+
+    private static async Task<ContentBase?> BuildFileContentAsync(string filePath, CancellationToken ct)
+    {
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        var fileBytes = await File.ReadAllBytesAsync(filePath, ct);
+        var base64 = Convert.ToBase64String(fileBytes);
+
+        if (ext == ".pdf")
+        {
+            return new DocumentContent
+            {
+                Source = new DocumentSource
+                {
+                    Type = SourceType.base64,
+                    Data = base64,
+                    MediaType = "application/pdf"
+                }
+            };
+        }
+
+        var mediaType = ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png"            => "image/png",
+            _                 => null
+        };
+
+        if (mediaType is null) return null;
+
+        return new ImageContent
+        {
+            Source = new ImageSource
+            {
+                MediaType = mediaType,
+                Data = base64
+            }
+        };
+    }
+
+    private static async Task<string> SendToClaudeAsync(
+        string apiKey,
+        ContentBase fileContent,
+        string prompt,
+        int maxTokens,
+        CancellationToken ct)
+    {
+        var client  = new AnthropicClient(apiKey);
+        var request = new MessageParameters
+        {
+            Model     = AnthropicModels.Claude46Sonnet,
+            MaxTokens = maxTokens,
+            Messages  = new List<Message>
+            {
+                new()
+                {
+                    Role    = RoleType.User,
+                    Content = new List<ContentBase> { fileContent, new TextContent { Text = prompt } }
+                }
+            }
+        };
+
+        var response = await client.Messages.GetClaudeMessageAsync(request, ct);
+        return response.Content.OfType<TextContent>().FirstOrDefault()?.Text ?? "{}";
+    }
+
+    private static MergePageResult ParsePageNumberResponse(string json)
+    {
+        try
+        {
+            var clean = json.Trim();
+            if (clean.StartsWith("```"))
+            {
+                var start = clean.IndexOf('{');
+                var end   = clean.LastIndexOf('}');
+                if (start >= 0 && end > start)
+                    clean = clean.Substring(start, end - start + 1);
+            }
+
+            using var doc  = System.Text.Json.JsonDocument.Parse(clean);
+            var root       = doc.RootElement;
+            var pageNumber = root.TryGetProperty("pageNumber", out var pn) && pn.ValueKind == System.Text.Json.JsonValueKind.Number
+                ? pn.GetInt32() : (int?)null;
+            var totalPages = root.TryGetProperty("totalPages", out var tp) && tp.ValueKind == System.Text.Json.JsonValueKind.Number
+                ? tp.GetInt32() : (int?)null;
+            var notes      = root.TryGetProperty("notes", out var n) ? n.GetString() ?? "" : "";
+
+            return new MergePageResult(pageNumber, totalPages, notes, true);
+        }
+        catch
+        {
+            return new MergePageResult(null, null, "Could not parse page number response.", false);
         }
     }
 

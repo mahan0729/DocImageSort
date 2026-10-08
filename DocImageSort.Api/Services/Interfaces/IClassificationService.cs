@@ -22,6 +22,21 @@ public record ClassificationResult(
 );
 
 /// <summary>
+/// The result of extracting a page number from a single page of a multi-page document.
+/// Used by the merge feature to sort pages into the correct order.
+/// </summary>
+/// <param name="PageNumber">The page number detected (e.g. 2 from "Page 2 of 4"), or null if not visible.</param>
+/// <param name="TotalPages">Total number of pages shown on the document (e.g. 4), or null if not shown.</param>
+/// <param name="Notes">Brief note about what was observed on the page.</param>
+/// <param name="Success">False if the API key is missing or the call failed.</param>
+public record MergePageResult(
+    int?   PageNumber,
+    int?   TotalPages,
+    string Notes,
+    bool   Success
+);
+
+/// <summary>
 /// Sends a document to Claude AI and returns its identified type and date.
 /// Supports PDF, JPG, and PNG input files.
 /// </summary>
@@ -34,6 +49,15 @@ public interface IClassificationService
     /// </summary>
     /// <param name="filePath">Absolute path to the PDF, JPG, or PNG file to classify.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A <see cref="ClassificationResult"/> with the document type, date, and AI notes.</returns>
     Task<ClassificationResult> ClassifyAsync(string filePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Extracts the page number from a single page of a multi-page document.
+    /// Used by <see cref="IMergeService"/> to sort pages into the correct order before merging.
+    /// Returns a result with <see cref="MergePageResult.Success"/> = false if the API key
+    /// is not configured or the call fails; never throws.
+    /// </summary>
+    /// <param name="filePath">Absolute path to the PDF, JPG, or PNG file.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<MergePageResult> ClassifyPageNumberAsync(string filePath, CancellationToken cancellationToken = default);
 }

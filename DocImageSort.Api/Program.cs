@@ -20,6 +20,7 @@ builder.Services.AddScoped<IRenameService, RenameService>();
 builder.Services.AddScoped<IRoutingService, RoutingService>();
 builder.Services.AddScoped<IDocumentReviewService, DocumentReviewService>();
 builder.Services.AddScoped<IDuplicateDetectionService, DuplicateDetectionService>();
+builder.Services.AddScoped<IMergeService, MergeService>();
 
 builder.Services.AddCors(options =>
 {

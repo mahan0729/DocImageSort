@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { BorrowersPage } from './pages/BorrowersPage'
 import { DocumentsPage } from './pages/DocumentsPage'
+import { MergePage } from './pages/MergePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProcessingLogPage } from './pages/ProcessingLogPage'
 import { HelpPage } from './pages/HelpPage'
 import './App.css'
 
-type Page = 'dashboard' | 'borrowers' | 'documents' | 'log' | 'settings' | 'help'
+type Page = 'dashboard' | 'borrowers' | 'documents' | 'merge' | 'log' | 'settings' | 'help'
 
 const NAV_LINKS: { label: string; page: Page }[] = [
   { label: 'Borrowers',      page: 'borrowers' },
   { label: 'Documents',      page: 'documents' },
+  { label: 'Merge',          page: 'merge' },
   { label: 'Processing Log', page: 'log' },
   { label: 'Settings',       page: 'settings' },
   { label: 'Help',           page: 'help' },
@@ -30,6 +32,13 @@ const FEATURES: { icon: string; title: string; description: string; action: stri
     description: 'Review AI-classified documents, confirm document types, and assign them to borrowers.',
     action: 'Review Documents',
     page: 'documents',
+  },
+  {
+    icon: '🔗',
+    title: 'Merge Documents',
+    description: 'Combine multiple pages of the same document into one PDF. AI detects page order automatically.',
+    action: 'Merge Pages',
+    page: 'merge',
   },
   {
     icon: '📋',
@@ -80,6 +89,7 @@ function App() {
     switch (page) {
       case 'borrowers': return <BorrowersPage />
       case 'documents': return <DocumentsPage />
+      case 'merge':     return <MergePage />
       case 'log':       return <ProcessingLogPage />
       case 'settings':  return <SettingsPage />
       case 'help':      return <HelpPage />
