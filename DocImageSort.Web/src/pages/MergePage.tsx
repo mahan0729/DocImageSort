@@ -10,7 +10,11 @@ function fileIcon(name: string) {
   return name.toLowerCase().endsWith('.pdf') ? '📄' : '🖼️'
 }
 
-export function MergePage() {
+interface MergePageProps {
+  onMergingChange?: (merging: boolean) => void
+}
+
+export function MergePage({ onMergingChange }: MergePageProps) {
   const [files, setFiles]       = useState<File[]>([])
   const [dragging, setDragging] = useState(false)
   const [loading, setLoading]   = useState(false)
@@ -65,6 +69,7 @@ export function MergePage() {
   const handleMerge = async () => {
     if (files.length < 2) return
     setLoading(true)
+    onMergingChange?.(true)
     setError(null)
     setResult(null)
     try {
@@ -75,6 +80,7 @@ export function MergePage() {
       setError(e instanceof Error ? e.message : 'Merge failed.')
     } finally {
       setLoading(false)
+      onMergingChange?.(false)
     }
   }
 

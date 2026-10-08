@@ -66,12 +66,12 @@ function Dashboard({ onNavigate }: { onNavigate: (page: Page) => void }) {
       </p>
       <div className="dashboard-grid">
         {FEATURES.map(f => (
-          <div key={f.page} className="card feature-card">
+          <div key={f.page} className="card feature-card" style={{ cursor: 'pointer' }} onClick={() => onNavigate(f.page)}>
             <div className="card-icon">{f.icon}</div>
             <h3>{f.title}</h3>
             <p>{f.description}</p>
             <div className="card-footer">
-              <button className="btn btn-outline" onClick={() => onNavigate(f.page)}>
+              <button className="btn btn-outline" onClick={e => { e.stopPropagation(); onNavigate(f.page); }}>
                 {f.action}
               </button>
             </div>
@@ -83,35 +83,44 @@ function Dashboard({ onNavigate }: { onNavigate: (page: Page) => void }) {
 }
 
 function App() {
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage]       = useState<Page>('dashboard')
+  const [merging, setMerging] = useState(false)
+
+  function navigate(p: Page) {
+    if (merging) return // block navigation while merge is in progress
+    setPage(p)
+  }
 
   function renderPage() {
     switch (page) {
       case 'borrowers': return <BorrowersPage />
       case 'documents': return <DocumentsPage />
-      case 'merge':     return <MergePage />
+      case 'merge':     return <MergePage onMergingChange={setMerging} />
       case 'log':       return <ProcessingLogPage />
       case 'settings':  return <SettingsPage />
       case 'help':      return <HelpPage />
-      default:          return <Dashboard onNavigate={setPage} />
+      default:          return <Dashboard onNavigate={navigate} />
     }
   }
 
   return (
     <>
       <header className="app-header">
-        <button className="brand-btn" onClick={() => setPage('dashboard')}>DocImageSort</button>
+        <button className="brand-btn" onClick={() => navigate('dashboard')} disabled={merging}>DocImageSort</button>
         <nav>
           {NAV_LINKS.map(link => (
             <button
               key={link.page}
               className={`nav-btn${page === link.page ? ' active' : ''}`}
-              onClick={() => setPage(link.page)}
+              onClick={() => navigate(link.page)}
+              disabled={merging}
+              title={merging ? 'Merge in progress — please wait…' : undefined}
             >
               {link.label}
             </button>
           ))}
         </nav>
+        {merging && <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', marginLeft: '12px' }}>Merging…</span>}
       </header>
 
       <main className="app-main">
@@ -120,6 +129,7 @@ function App() {
 
       <footer className="app-footer">
         DocImageSort LLC &copy; {new Date().getFullYear()}, all rights reserved
+        <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '2px' }}>v0.0.0</div>
       </footer>
     </>
   )

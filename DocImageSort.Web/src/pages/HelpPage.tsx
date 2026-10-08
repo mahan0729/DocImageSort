@@ -26,6 +26,7 @@ const DOC_TYPES = [
   'Divorce Decree', 'Bankruptcy (Chapter 7)', 'Bankruptcy (Chapter 13)',
   'Child Support Order', 'Alimony Agreement', 'Business License',
   'Power of Attorney', 'Death Certificate', 'Quitclaim Deed', 'Trust Document',
+  'Earnest Money Check',
   'Unknown (or document title if printed)',
 ]
 
@@ -104,7 +105,6 @@ export function HelpPage() {
             <ol>
               <li>DocImageSort detects the file and creates a database record.</li>
               <li>It checks whether the file is a duplicate (by SHA-256 hash). Duplicates are flagged and skipped.</li>
-              <li>If the file is a JPG or PNG taken by phone, it is auto-cropped to remove desk or background from the edges.</li>
               <li>Claude AI reads the document and identifies its type and date.</li>
               <li>If the file is a JPG or PNG, it is converted to PDF.</li>
               <li>The file is renamed with the <code>PENDING_</code> prefix and moved to the PENDING folder.</li>
@@ -132,8 +132,7 @@ export function HelpPage() {
               <li>Click <b>Merge N Pages</b>. The pages are combined into one PDF and run through the standard pipeline — classified, renamed, and placed in PENDING.</li>
             </ol>
             <div className="help-tip">
-              <strong>Tip:</strong> Auto-crop also runs on each page during a merge — desk or background in
-              phone photos is removed before page-number detection and classification.
+              <strong>Tip:</strong> Do not navigate away while a merge is running — navigation is locked until the merge completes.
             </div>
             <h3>Page order</h3>
             <p>
@@ -150,7 +149,7 @@ export function HelpPage() {
               The Documents screen is where you review what the AI classified and assign documents to borrowers.
             </p>
             <h3>Status filter tabs</h3>
-            <p>Use the tabs at the top to filter by status. <b>Pending</b> shows documents that still need attention.</p>
+            <p>Use the tabs at the top to filter documents. The <b>Unassigned</b> tab shows all documents that have not yet been filed to a borrower — this is your main working view after each batch. The page refreshes automatically every 10 seconds so new files appear without reloading.</p>
 
             <table className="help-table">
               <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
@@ -217,7 +216,6 @@ export function HelpPage() {
                 {[
                   ['Ingest',          'File detected in drop folder; database record created.'],
                   ['DuplicateCheck',  'SHA-256 hash compared against existing documents.'],
-                  ['AutoCrop',        'Phone photo cropped to document boundaries (JPG/PNG only).'],
                   ['Classify',        'Claude AI identified document type and date.'],
                   ['Convert',         'JPG/PNG converted to PDF.'],
                   ['Rename',          'File renamed to standardized name.'],
