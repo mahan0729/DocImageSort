@@ -7,12 +7,13 @@ AI-powered document organizer for mortgage loan officers. Drop a scanned documen
 ## What It Does
 
 1. **Watch** — monitors a drop folder for new PDFs, JPGs, and PNGs
-2. **Classify** — sends the file to Claude AI to identify the document type (Pay Stub, W-2, Bank Statement, etc.) and extract the document date
-3. **Convert** — converts images (JPG/PNG) to PDF
-4. **Rename** — applies a standardized file name: `LastName,FirstName_DocType_YYYY-MM.pdf`
-5. **Route** — moves the file into `[FilesFolder]\LastName,FirstName\`
+2. **Auto-Crop** — phone photos are automatically cropped to the document boundaries (removes desk/background clutter)
+3. **Classify** — sends the file to Claude AI to identify the document type (Pay Stub, W-2, Bank Statement, etc.) and extract the document date
+4. **Convert** — converts images (JPG/PNG) to PDF
+5. **Rename** — applies a standardized file name: `LastName_FirstName_DocType_MMDDYYYY.pdf`
+6. **Route** — moves the file into `[FilesFolder]\PENDING\` until a borrower is assigned
 
-Unassigned documents land in `[FilesFolder]\PENDING\` until you assign a borrower from the Document Review screen.
+Multi-page documents (multiple photos of one statement) can be combined using the **Merge Documents** screen — AI detects page numbers and assembles them in order before running the pipeline.
 
 ---
 
@@ -133,8 +134,9 @@ Pay Stub · Bank Statement · W2 · Tax Return (1040) · 1003 Loan Application �
 | Layer | Technology |
 |---|---|
 | API | .NET 10 Web API |
-| AI Classification | Anthropic Claude (claude-sonnet-4-6) via Anthropic.SDK |
-| PDF Conversion | PDFsharp 6.2 |
+| AI (Classification, AutoCrop, Page Detection) | Anthropic Claude (claude-sonnet-4-6) via Anthropic.SDK |
+| PDF Merge & Conversion | PDFsharp 6.2 |
+| Image Crop | System.Drawing.Common (GDI+, Windows) |
 | Database | SQLite + EF Core |
 | Frontend | React 19 + TypeScript (Vite) |
 | Project Management | Azure DevOps |
@@ -146,15 +148,15 @@ Pay Stub · Bank Statement · W2 · Tax Return (1040) · 1003 Loan Application �
 ```
 DocImageSort/
 ├── DocImageSort.Api/
-│   ├── Controllers/          # BorrowersController, DocumentsController, ProcessingLogsController, SettingsController
+│   ├── Controllers/          # Borrowers, Documents, Merge, ProcessingLogs, Settings
 │   ├── Data/                 # AppDbContext (SQLite + EF Core)
 │   ├── Models/               # Borrower, Document, LoanFile, ProcessingLog, BaseEntity
-│   ├── Services/             # Pipeline, Classification, Conversion, Rename, Route, Duplicate Detection, Review
+│   ├── Services/             # Pipeline, Classification, AutoCrop, Conversion, Merge, Rename, Route, Duplicate, Review
 │   └── appsettings.json      # Drop folder, files folder, API key, feature flags
 └── DocImageSort.Web/
     └── src/
-        ├── api/              # borrowers.ts, documents.ts, processingLogs.ts, settings.ts
-        └── pages/            # BorrowersPage, DocumentsPage, ProcessingLogPage, SettingsPage
+        ├── api/              # borrowers.ts, documents.ts, merge.ts, processingLogs.ts, settings.ts
+        └── pages/            # BorrowersPage, DocumentsPage, MergePage, ProcessingLogPage, SettingsPage
 ```
 
 ---

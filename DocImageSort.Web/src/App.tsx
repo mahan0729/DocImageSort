@@ -119,7 +119,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        DocImageSort &copy; {new Date().getFullYear()}, all rights reserved
+        DocImageSort LLC &copy; {new Date().getFullYear()}, all rights reserved
       </footer>
     </>
   )

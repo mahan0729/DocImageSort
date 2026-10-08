@@ -3,6 +3,7 @@ import './HelpPage.css'
 const TOC = [
   { id: 'quick-start',    label: 'Quick Start' },
   { id: 'drop-folder',    label: 'Drop Folder' },
+  { id: 'merge',          label: 'Merge Documents' },
   { id: 'documents',      label: 'Documents' },
   { id: 'borrowers',      label: 'Borrowers' },
   { id: 'processing-log', label: 'Processing Log' },
@@ -103,6 +104,7 @@ export function HelpPage() {
             <ol>
               <li>DocImageSort detects the file and creates a database record.</li>
               <li>It checks whether the file is a duplicate (by SHA-256 hash). Duplicates are flagged and skipped.</li>
+              <li>If the file is a JPG or PNG taken by phone, it is auto-cropped to remove desk or background from the edges.</li>
               <li>Claude AI reads the document and identifies its type and date.</li>
               <li>If the file is a JPG or PNG, it is converted to PDF.</li>
               <li>The file is renamed with the <code>PENDING_</code> prefix and moved to the PENDING folder.</li>
@@ -112,6 +114,33 @@ export function HelpPage() {
               <strong>Tip:</strong> The drop folder is monitored in real time — you do not need to refresh the app.
               Reload the Documents page to see newly processed files.
             </div>
+          </section>
+
+          {/* ── Merge Documents ── */}
+          <section id="merge" className="help-section">
+            <h2>🔗 Merge Documents</h2>
+            <p>
+              When a document arrives as multiple separate photos or scans (each page saved as its own file),
+              use <b>Merge Documents</b> to combine them into a single PDF before processing.
+            </p>
+            <h3>How to merge</h3>
+            <ol>
+              <li>Click <b>Merge</b> in the top navigation.</li>
+              <li>Drop or browse for the individual page files (PDF, JPG, or PNG). Up to 20 files at once.</li>
+              <li>AI automatically detects the page number printed on each page and sorts them in order.</li>
+              <li>Use the ▲ ▼ arrows to adjust the order manually if needed.</li>
+              <li>Click <b>Merge N Pages</b>. The pages are combined into one PDF and run through the standard pipeline — classified, renamed, and placed in PENDING.</li>
+            </ol>
+            <div className="help-tip">
+              <strong>Tip:</strong> Auto-crop also runs on each page during a merge — desk or background in
+              phone photos is removed before page-number detection and classification.
+            </div>
+            <h3>Page order</h3>
+            <p>
+              AI looks for patterns like <code>Page 2 of 4</code>, <code>2 of 4</code>, or a lone number in
+              the header or footer. When page numbers are not visible on a page, that page falls back to
+              its upload position.
+            </p>
           </section>
 
           {/* ── Documents ── */}
@@ -188,6 +217,7 @@ export function HelpPage() {
                 {[
                   ['Ingest',          'File detected in drop folder; database record created.'],
                   ['DuplicateCheck',  'SHA-256 hash compared against existing documents.'],
+                  ['AutoCrop',        'Phone photo cropped to document boundaries (JPG/PNG only).'],
                   ['Classify',        'Claude AI identified document type and date.'],
                   ['Convert',         'JPG/PNG converted to PDF.'],
                   ['Rename',          'File renamed to standardized name.'],
