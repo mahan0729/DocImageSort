@@ -188,6 +188,13 @@ export function MergePage({ onMergingChange }: MergePageProps) {
       {/* Error */}
       {error && <div className="merge-error">{error}</div>}
 
+      {/* Nav lock warning */}
+      {loading && (
+        <div className="merge-nav-warning">
+          ⏳ Merge in progress — please stay on this page until it completes.
+        </div>
+      )}
+
       {/* Actions */}
       <div className="merge-actions">
         {files.length > 0 && (

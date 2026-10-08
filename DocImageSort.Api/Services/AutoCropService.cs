@@ -66,6 +66,9 @@ public class AutoCropService : IAutoCropService
         if (!ImageExtensions.Contains(ext))
             return filePath; // PDFs and unsupported types are unchanged
 
+        // Auto-crop disabled per Chance's UAT feedback — re-evaluate for Phase 2
+        return filePath;
+
         try
         {
             var apiKey = _config["Anthropic:ApiKey"] ?? string.Empty;
