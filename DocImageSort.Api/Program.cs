@@ -58,6 +58,9 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Documents\" ADD COLUMN \"DocumentQualifier\" TEXT NOT NULL DEFAULT ''"); }
     catch { /* column already exists */ }
 
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Documents\" ADD COLUMN \"DocumentEndDate\" TEXT NULL"); }
+    catch { /* column already exists */ }
+
     // Seed users (Phase 1: no passwords — auth added in Phase 2).
     if (!db.Users.Any())
     {
