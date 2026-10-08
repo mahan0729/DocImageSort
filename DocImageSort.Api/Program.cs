@@ -21,6 +21,9 @@ builder.Services.AddScoped<IRoutingService, RoutingService>();
 builder.Services.AddScoped<IDocumentReviewService, DocumentReviewService>();
 builder.Services.AddScoped<IDuplicateDetectionService, DuplicateDetectionService>();
 builder.Services.AddScoped<IMergeService, MergeService>();
+#pragma warning disable CA1416 // AutoCropService is Windows-only; this app ships as win-x64
+builder.Services.AddScoped<IAutoCropService, AutoCropService>();
+#pragma warning restore CA1416
 
 builder.Services.AddCors(options =>
 {

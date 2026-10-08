@@ -22,6 +22,7 @@ public class DocumentPipelineServiceTests : IDisposable
     private readonly string _filesFolder;
     private readonly ServiceProvider _serviceProvider;
     private readonly Mock<IClassificationService> _classifier;
+    private readonly Mock<IAutoCropService> _autoCropper;
     private readonly DocumentPipelineService _sut;
 
     public DocumentPipelineServiceTests()
@@ -55,6 +56,11 @@ public class DocumentPipelineServiceTests : IDisposable
         _classifier = new Mock<IClassificationService>();
         DefaultClassifier("Pay Stub", "2026-08");
 
+        _autoCropper = new Mock<IAutoCropService>();
+        _autoCropper
+            .Setup(a => a.CropToDocumentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string path, CancellationToken _) => path);
+
         _sut = new DocumentPipelineService(
             _serviceProvider.GetRequiredService<IServiceScopeFactory>(),
             _classifier.Object,
@@ -62,6 +68,7 @@ public class DocumentPipelineServiceTests : IDisposable
             new RenameService(NullLogger<RenameService>.Instance),
             new RoutingService(config, NullLogger<RoutingService>.Instance),
             new DuplicateDetectionService(ddDb, NullLogger<DuplicateDetectionService>.Instance),
+            _autoCropper.Object,
             NullLogger<DocumentPipelineService>.Instance);
     }
 

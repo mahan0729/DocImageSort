@@ -12,16 +12,19 @@ public class MergeService : IMergeService
 {
     private readonly IClassificationService _classifier;
     private readonly IConversionService _converter;
+    private readonly IAutoCropService _autoCropper;
     private readonly ILogger<MergeService> _logger;
 
     public MergeService(
         IClassificationService classifier,
         IConversionService converter,
+        IAutoCropService autoCropper,
         ILogger<MergeService> logger)
     {
-        _classifier = classifier;
-        _converter  = converter;
-        _logger     = logger;
+        _classifier  = classifier;
+        _converter   = converter;
+        _autoCropper = autoCropper;
+        _logger      = logger;
     }
 
     /// <inheritdoc/>
@@ -35,6 +38,10 @@ public class MergeService : IMergeService
 
         try
         {
+            // Auto-crop each image before classification (removes desk/background from phone photos)
+            var cropTasks = paths.Select(p => _autoCropper.CropToDocumentAsync(p, cancellationToken));
+            await Task.WhenAll(cropTasks);
+
             // Classify page numbers in parallel (best-effort; falls back to upload order)
             var classifyTasks = paths.Select((path, idx) => ClassifyPageAsync(path, idx, cancellationToken));
             var pageInfos = await Task.WhenAll(classifyTasks);

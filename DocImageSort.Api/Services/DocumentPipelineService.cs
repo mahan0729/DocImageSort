@@ -6,7 +6,7 @@ using AppLogLevel = DocImageSort.Api.Models.LogLevel;
 namespace DocImageSort.Api.Services;
 
 /// <summary>
-/// Orchestrates the full document pipeline: ingest → classify → convert → rename → route.
+/// Orchestrates the full document pipeline: ingest → auto-crop → classify → convert → rename → route.
 /// </summary>
 public class DocumentPipelineService : IDocumentPipelineService
 {
@@ -19,6 +19,7 @@ public class DocumentPipelineService : IDocumentPipelineService
     private readonly IRenameService _renamer;
     private readonly IRoutingService _router;
     private readonly IDuplicateDetectionService _duplicateDetector;
+    private readonly IAutoCropService _autoCropper;
     private readonly ILogger<DocumentPipelineService> _logger;
 
     public DocumentPipelineService(
@@ -28,6 +29,7 @@ public class DocumentPipelineService : IDocumentPipelineService
         IRenameService renamer,
         IRoutingService router,
         IDuplicateDetectionService duplicateDetector,
+        IAutoCropService autoCropper,
         ILogger<DocumentPipelineService> logger)
     {
         _scopeFactory = scopeFactory;
@@ -36,6 +38,7 @@ public class DocumentPipelineService : IDocumentPipelineService
         _renamer = renamer;
         _router = router;
         _duplicateDetector = duplicateDetector;
+        _autoCropper = autoCropper;
         _logger = logger;
     }
 
@@ -101,6 +104,17 @@ public class DocumentPipelineService : IDocumentPipelineService
             document.UpdatedBy = "system";
             document.UpdatedDate = DateTime.UtcNow;
             await db.SaveChangesAsync(cancellationToken);
+
+            // Step 1c — Auto-crop (JPG/PNG only; removes desk/background from phone photos)
+            var preCropSize = new FileInfo(filePath).Length;
+            await _autoCropper.CropToDocumentAsync(filePath, cancellationToken);
+            var postCropSize = new FileInfo(filePath).Length;
+            if (postCropSize != preCropSize)
+            {
+                await LogAsync(db, document.Id, fileName, "AutoCrop", "Cropped",
+                    $"Image cropped: {preCropSize / 1024} KB → {postCropSize / 1024} KB",
+                    AppLogLevel.Info, cancellationToken);
+            }
 
             // Step 2 — AI classification
             var classification = await _classifier.ClassifyAsync(filePath, cancellationToken);
