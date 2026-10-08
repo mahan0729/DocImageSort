@@ -50,6 +50,15 @@ public class SettingsController : ControllerBase
     [HttpPut]
     public IActionResult Update([FromBody] SettingsDto req)
     {
+        if (string.IsNullOrWhiteSpace(req.DropFolderPath))
+            return BadRequest("Drop Folder path is required.");
+        if (string.IsNullOrWhiteSpace(req.FilesFolderPath))
+            return BadRequest("Files Folder path is required.");
+        if (req.DropFolderPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            return BadRequest("Drop Folder path contains invalid characters.");
+        if (req.FilesFolderPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            return BadRequest("Files Folder path contains invalid characters.");
+
         try
         {
             var json = System.IO.File.ReadAllText(SettingsPath);

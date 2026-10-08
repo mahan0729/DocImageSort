@@ -90,6 +90,7 @@ public class RenameService : IRenameService
                 var nameNoExt = Path.GetFileNameWithoutExtension(newName);
                 while (File.Exists(newPath))
                 {
+                    if (counter > 999) throw new InvalidOperationException($"Too many files with the same name in {directory}.");
                     newPath = Path.Combine(directory, $"{nameNoExt}_{counter++}.pdf");
                 }
             }

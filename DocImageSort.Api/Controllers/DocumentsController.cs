@@ -83,6 +83,8 @@ public class DocumentsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.DocumentType))
             return BadRequest("DocumentType is required.");
+        if (req.DocumentType.Length > 100)
+            return BadRequest("DocumentType must be 100 characters or fewer.");
 
         try
         {
@@ -171,19 +173,48 @@ public static class KnownDocumentTypes
     [
         "Pay Stub",
         "Bank Statement",
-        "W-2",
-        "1040 Tax Return",
-        "1099",
-        "Driver's License",
-        "Social Security Card",
-        "Mortgage Statement",
-        "Homeowners Insurance",
-        "Purchase Agreement",
-        "Appraisal Report",
+        "W2",
+        "Tax Return (1040)",
+        "1003 Loan Application",
+        "Insurance Declaration",
         "Title Report",
-        "HOA Statement",
+        "Appraisal",
+        "Purchase Contract",
+        "Credit Report",
+        "VOE (Verification of Employment)",
+        "VOD (Verification of Deposits)",
+        "Driver License",
+        "Social Security Card",
         "Gift Letter",
-        "Verification of Employment",
+        "HOA Documents",
+        "Flood Certification",
+        "1099-INT",
+        "1099-DIV",
+        "1099-B",
+        "1099-MISC",
+        "1099-NEC",
+        "1099 Composite",
+        "Mortgage Statement",
+        "Lease Agreement",
+        "Award Letter",
+        "Retirement Statement",
+        "Investment Account Statement",
+        "P&L Statement",
+        "Schedule C",
+        "Schedule E",
+        "K-1",
+        "SSA-89",
+        "LOE (Letter of Explanation)",
+        "Divorce Decree",
+        "Bankruptcy (Chapter 7)",
+        "Bankruptcy (Chapter 13)",
+        "Child Support Order",
+        "Alimony Agreement",
+        "Business License",
+        "Power of Attorney",
+        "Death Certificate",
+        "Quitclaim Deed",
+        "Trust Document",
         "Unknown",
     ];
 }

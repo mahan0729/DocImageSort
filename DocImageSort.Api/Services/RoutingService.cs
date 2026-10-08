@@ -42,6 +42,7 @@ public class RoutingService : IRoutingService
                 var nameNoExt = Path.GetFileNameWithoutExtension(fileName);
                 while (File.Exists(destinationPath))
                 {
+                    if (counter > 999) throw new InvalidOperationException($"Too many files with the same name in {destinationFolder}.");
                     destinationPath = Path.Combine(destinationFolder, $"{nameNoExt}_{counter++}.pdf");
                 }
             }

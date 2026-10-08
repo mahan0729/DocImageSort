@@ -72,8 +72,7 @@ public class DropFolderWatcherService : BackgroundService
             return;
         }
 
-        // Wait briefly for the file write to complete before processing.
-        await Task.Delay(500, cancellationToken);
+        await WaitForFileReadyAsync(filePath, cancellationToken);
 
         try
         {
@@ -85,6 +84,28 @@ public class DropFolderWatcherService : BackgroundService
         {
             _logger.LogError(ex, "Error processing dropped file: {File}", filePath);
         }
+    }
+
+    /// <summary>
+    /// Waits until the file can be opened exclusively, retrying up to 10 times with 500 ms gaps.
+    /// Handles large files copied over network shares that are still being written.
+    /// </summary>
+    private async Task WaitForFileReadyAsync(string filePath, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            try
+            {
+                await using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                return;
+            }
+            catch (IOException)
+            {
+                _logger.LogDebug("File not ready yet (attempt {Attempt}): {File}", attempt + 1, Path.GetFileName(filePath));
+                await Task.Delay(500, ct);
+            }
+        }
+        _logger.LogWarning("File may still be locked after 10 attempts — proceeding anyway: {File}", Path.GetFileName(filePath));
     }
 
     public override void Dispose()
