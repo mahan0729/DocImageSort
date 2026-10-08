@@ -25,6 +25,7 @@ public class ClassificationService : IClassificationService
         Divorce Decree, Bankruptcy (Chapter 7), Bankruptcy (Chapter 13),
         Child Support Order, Alimony Agreement, Business License,
         Power of Attorney, Death Certificate, Quitclaim Deed, Trust Document,
+        Earnest Money Check,
         Unknown
 
         If the document does not match any type above but has a visible title printed on it,

@@ -125,7 +125,7 @@ Click **Settings** to:
 
 ## Supported Document Types
 
-Pay Stub · Bank Statement · W2 · Tax Return (1040) · 1003 Loan Application · 1099-INT · 1099-DIV · 1099-B · 1099-MISC · 1099-NEC · 1099 Composite · Driver License · Social Security Card · Gift Letter · Insurance Declaration · Title Report · Appraisal · Purchase Contract · Credit Report · VOE · VOD · Flood Certification · HOA Documents · Mortgage Statement · Lease Agreement · Award Letter · Retirement Statement · Investment Account Statement · P&L Statement · Schedule C · Schedule E · K-1 · SSA-89 · LOE · Divorce Decree · Bankruptcy (Chapter 7) · Bankruptcy (Chapter 13) · Child Support Order · Alimony Agreement · Business License · Power of Attorney · Death Certificate · Quitclaim Deed · Trust Document · Unknown (or document's printed title)
+Pay Stub · Bank Statement · W2 · Tax Return (1040) · 1003 Loan Application · 1099-INT · 1099-DIV · 1099-B · 1099-MISC · 1099-NEC · 1099 Composite · Driver License · Social Security Card · Gift Letter · Insurance Declaration · Title Report · Appraisal · Purchase Contract · Credit Report · VOE · VOD · Flood Certification · HOA Documents · Mortgage Statement · Lease Agreement · Award Letter · Retirement Statement · Investment Account Statement · P&L Statement · Schedule C · Schedule E · K-1 · SSA-89 · LOE · Divorce Decree · Bankruptcy (Chapter 7) · Bankruptcy (Chapter 13) · Child Support Order · Alimony Agreement · Business License · Power of Attorney · Death Certificate · Quitclaim Deed · Trust Document · Earnest Money Check · Unknown (or document's printed title)
 
 ---
 

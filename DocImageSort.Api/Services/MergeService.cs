@@ -70,7 +70,7 @@ public class MergeService : IMergeService
                 }
 
                 // Merge all pages into one PDF
-                mergedPath = Path.Combine(Path.GetTempPath(), $"merge_{Guid.NewGuid():N}.pdf");
+                mergedPath = Path.Combine(Path.GetTempPath(), $"Merged_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
                 using (var outputDoc = new PdfDocument())
                 {
                     foreach (var (pdfPath, _) in pdfPaths)
